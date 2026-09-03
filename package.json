@@ -1,0 +1,29 @@
+{
+  "name": "flowboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A collaborative project management workspace for small teams.",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names API,WEB --prefix-colors blue,magenta \"npm run dev --workspace @flowboard/api\" \"npm run dev --workspace @flowboard/web\"",
+    "dev:api": "npm run dev --workspace @flowboard/api",
+    "dev:web": "npm run dev --workspace @flowboard/web",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "oxlint apps --deny-warnings",
+    "test": "npm run test --workspaces --if-present",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "db:generate": "npm run db:generate --workspace @flowboard/api",
+    "db:validate": "npm run db:validate --workspace @flowboard/api",
+    "db:check": "npm run db:check --workspace @flowboard/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "oxlint": "^1.79.0"
+  }
+}
