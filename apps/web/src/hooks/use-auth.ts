@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { authQueryKey, getCurrentUser, login, logout, register } from "../lib/auth";
+import { authQueryKey, getCurrentUser, login, logout, register, updateProfile } from "../lib/auth";
 
 export const useCurrentUser = () =>
   useQuery({
@@ -38,6 +38,17 @@ export const useLogout = () => {
     onSettled() {
       queryClient.setQueryData(authQueryKey, null);
       queryClient.removeQueries({ predicate: ({ queryKey }) => queryKey[0] !== "auth" });
+    },
+  });
+};
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateProfile,
+    onSuccess(response) {
+      queryClient.setQueryData(authQueryKey, response.data.user);
     },
   });
 };

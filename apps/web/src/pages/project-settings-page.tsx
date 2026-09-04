@@ -1,9 +1,12 @@
 import { ArrowLeft, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ContentError, ContentLoader } from "../components/content-state";
+import { ConfirmDialog } from "../components/confirm-dialog";
 import { ProjectForm } from "../components/project-form";
 import { ProjectNavigation } from "../components/project-navigation";
 import { WorkspaceShell } from "../components/workspace-shell";
+import { useToast } from "../components/toast";
 import { useDeleteProject, useProject, useUpdateProject } from "../hooks/use-projects";
 
 export const ProjectSettingsPage = () => {
@@ -12,12 +15,17 @@ export const ProjectSettingsPage = () => {
   const projectQuery = useProject(projectId);
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
+  const { showToast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleDelete = () => {
     if (!projectQuery.data) return;
-    const confirmed = window.confirm(`Delete “${projectQuery.data.name}”? This permanently removes the project and all associated data.`);
-    if (!confirmed) return;
-    deleteProject.mutate(projectId, { onSuccess: () => navigate("/projects", { replace: true }) });
+    deleteProject.mutate(projectId, {
+      onSuccess: () => {
+        showToast({ title: "Project deleted" });
+        navigate("/projects", { replace: true });
+      },
+    });
   };
 
   return (
@@ -50,7 +58,10 @@ export const ProjectSettingsPage = () => {
                         isPending={updateProject.isPending}
                         errorMessage={updateProject.isError ? updateProject.error.message : undefined}
                         onCancel={() => navigate(`/projects/${projectId}`)}
-                        onSubmit={(input) => updateProject.mutate({ projectId, input })}
+                        onSubmit={(input) => updateProject.mutate(
+                          { projectId, input },
+                          { onSuccess: () => showToast({ title: "Project settings saved" }) },
+                        )}
                       />
                     </div>
                   </section>
@@ -59,8 +70,19 @@ export const ProjectSettingsPage = () => {
                     <h2 className="text-lg font-bold text-red-700">Delete project</h2>
                     <p className="mt-2 text-sm leading-6 text-slate-600">Permanently delete this project, its board, memberships, and activity records. This action cannot be undone.</p>
                     {deleteProject.isError ? <p className="mt-3 text-sm text-red-700" role="alert">{deleteProject.error.message}</p> : null}
-                    <button className="mt-5 inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-60" type="button" onClick={handleDelete} disabled={deleteProject.isPending}><Trash2 aria-hidden="true" size={17} />{deleteProject.isPending ? "Deleting project..." : "Delete project"}</button>
+                    <button className="mt-5 inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-60" type="button" onClick={() => { deleteProject.reset(); setDeleteDialogOpen(true); }} disabled={deleteProject.isPending}><Trash2 aria-hidden="true" size={17} />Delete project</button>
                   </section>
+                  <ConfirmDialog
+                    open={deleteDialogOpen}
+                    title="Delete project permanently?"
+                    description={`Delete “${projectQuery.data.name}”, its board, tasks, comments, members, and activity. This action cannot be undone.`}
+                    confirmLabel="Delete project"
+                    pendingLabel="Deleting project..."
+                    isPending={deleteProject.isPending}
+                    errorMessage={deleteProject.isError ? deleteProject.error.message : undefined}
+                    onCancel={() => setDeleteDialogOpen(false)}
+                    onConfirm={handleDelete}
+                  />
                 </div>
               )}
             </>

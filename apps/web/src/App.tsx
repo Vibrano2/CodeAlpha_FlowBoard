@@ -13,27 +13,32 @@ import { TaskDetailPage } from "./pages/task-detail-page";
 import { MyTasksPage } from "./pages/my-tasks-page";
 import { ProjectActivityPage } from "./pages/project-activity-page";
 import { NotificationsPage } from "./pages/notifications-page";
+import { ProfilePage } from "./pages/profile-page";
+import { ToastProvider } from "./components/toast";
 
 export const App = () => (
-  <Routes>
-    <Route element={<PublicOnlyRoute />}>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-    </Route>
-    <Route element={<ProtectedRoute />}>
-      <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/projects" element={<ProjectsPage />} />
-      <Route path="/tasks" element={<MyTasksPage />} />
-      <Route path="/notifications" element={<NotificationsPage />} />
-      <Route path="/projects/new" element={<CreateProjectPage />} />
-      <Route path="/projects/:projectId" element={<ProjectOverviewPage />} />
-      <Route path="/projects/:projectId/board" element={<ProjectBoardPage />} />
-      <Route path="/projects/:projectId/members" element={<ProjectMembersPage />} />
-      <Route path="/projects/:projectId/activity" element={<ProjectActivityPage />} />
-      <Route path="/projects/:projectId/settings" element={<ProjectSettingsPage />} />
-      <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
-    </Route>
-    <Route path="/" element={<Navigate replace to="/dashboard" />} />
-    <Route path="*" element={<Navigate replace to="/dashboard" />} />
-  </Routes>
+  <ToastProvider>
+    <Routes>
+      <Route element={<PublicOnlyRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Route>
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/tasks" element={<MyTasksPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/projects/new" element={<CreateProjectPage />} />
+        <Route path="/projects/:projectId" element={<ProjectOverviewPage />} />
+        <Route path="/projects/:projectId/board" element={<ProjectBoardPage />} />
+        <Route path="/projects/:projectId/members" element={<ProjectMembersPage />} />
+        <Route path="/projects/:projectId/activity" element={<ProjectActivityPage />} />
+        <Route path="/projects/:projectId/settings" element={<ProjectSettingsPage />} />
+        <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
+      </Route>
+      <Route path="/" element={<Navigate replace to="/dashboard" />} />
+      <Route path="*" element={<Navigate replace to="/dashboard" />} />
+    </Routes>
+  </ToastProvider>
 );

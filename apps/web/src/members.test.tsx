@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
@@ -119,7 +119,6 @@ describe("FlowBoard project members UI", () => {
 
   it("confirms removal and refreshes the member list", async () => {
     let members: Array<typeof ownerMembership | typeof memberMembership> = [ownerMembership, memberMembership];
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/auth/me")) return Promise.resolve(jsonResponse({ success: true, data: { user: owner } }));
@@ -136,6 +135,10 @@ describe("FlowBoard project members UI", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: `Remove ${memberUser.name}` }));
 
+    const dialog = screen.getByRole("alertdialog", { name: "Remove project member?" });
+    expect(dialog).toBeVisible();
+    expect(within(dialog).getByText(/immediately lose project access/)).toBeVisible();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Remove member" }));
     await waitFor(() => expect(screen.queryByText(memberUser.name)).not.toBeInTheDocument());
     expect(fetchMock).toHaveBeenCalledWith(
       `http://localhost:4000/api/v1/projects/${projectId}/members/${memberUser.id}`,

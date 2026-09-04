@@ -4,7 +4,7 @@ FlowBoard is a collaborative project management workspace for small teams. It is
 
 ## Project status
 
-Milestones 1 through 7 establish the technical foundation, secure authentication, project and member management, the task lifecycle, comments, activity history, task discovery, and in-app notifications. Responsive polish, final security QA, and real-time updates remain reserved for their specified milestones.
+Milestones 1 through 8 establish the technical foundation, secure authentication, project and member management, the task lifecycle, comments, activity history, task discovery, notifications, and the polished responsive interface. Final security QA and real-time updates remain reserved for their specified milestones.
 
 | Milestone | Status |
 | --- | --- |
@@ -15,7 +15,7 @@ Milestones 1 through 7 establish the technical foundation, secure authentication
 | 5. Board and tasks | Complete |
 | 6. Comments and activity | Complete |
 | 7. Search and notifications | Complete |
-| 8. UI and responsive polish | Not started |
+| 8. UI and responsive polish | Complete |
 | 9. Security and QA | Not started |
 | 10. WebSockets bonus | Not started |
 
@@ -121,6 +121,18 @@ Milestones 1 through 7 establish the technical foundation, secure authentication
 - Ownership-scoped mark-one-read and mark-all-read endpoints
 - Responsive Notifications screen with read/unread text, related-resource navigation, and honest empty/error states
 - Unread notification badges in desktop and mobile navigation
+
+## Milestone 8 features
+
+- Responsive application layouts for mobile, tablet, laptop, and wide desktop widths
+- Accessible keyboard-managed confirmation dialogs for project, member, task, and comment deletion
+- Reusable live-region toast feedback for successful project, task, member, comment, and profile actions
+- Authenticated profile screen for display name, normalized email, and optional HTTPS avatar updates
+- Self-scoped profile API that never accepts a target user identifier
+- Clickable desktop and mobile profile navigation with avatar or initials fallback
+- Skip-to-content navigation, visible focus states, reduced-motion support, and keyboard-scrollable Kanban content
+- Native browser field validation backed by the existing server-side Zod validation
+- Updated loading, empty, error, pending, and success states across core workflows
 
 ## Tech stack
 
@@ -347,6 +359,8 @@ Controllers remain thin, services contain business logic, and database access is
 
 | Method | Endpoint | Authorization | Purpose |
 | --- | --- | --- | --- |
+| `GET` | `/api/v1/users/me` | Authenticated user | Return the current user's safe profile |
+| `PATCH` | `/api/v1/users/me` | Authenticated user | Update the current user's name, email, or HTTPS avatar URL |
 | `GET` | `/api/v1/users/search?email=` | Authenticated user | Search registered users by email |
 | `GET` | `/api/v1/projects/:projectId/members` | Project member | List project members |
 | `POST` | `/api/v1/projects/:projectId/members` | Project owner | Add a registered user as a member |

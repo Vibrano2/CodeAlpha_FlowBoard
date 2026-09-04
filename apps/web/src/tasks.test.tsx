@@ -295,7 +295,6 @@ describe("FlowBoard task UI", () => {
   });
 
   it("requires confirmation before task deletion", async () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const base = baseResponse(input);
       if (base) return Promise.resolve(base);
@@ -312,7 +311,9 @@ describe("FlowBoard task UI", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Delete task" }));
 
-    expect(confirm).toHaveBeenCalledWith(`Delete "${task.title}" permanently?`);
+    const dialog = screen.getByRole("alertdialog", { name: "Delete task permanently?" });
+    expect(dialog).toBeVisible();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete task" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       `http://localhost:4000/api/v1/tasks/${taskId}`,
       expect.objectContaining({ method: "DELETE" }),

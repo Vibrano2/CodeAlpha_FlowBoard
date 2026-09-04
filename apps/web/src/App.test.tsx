@@ -68,6 +68,42 @@ describe("FlowBoard authentication flow", () => {
     expect(await screen.findByText("API and database connected")).toBeVisible();
   });
 
+  it("updates the signed-in user's profile and refreshes the shell identity", async () => {
+    const updatedUser = {
+      ...user,
+      name: "Victor David",
+      email: "victor.david@example.com",
+      updatedAt: "2026-09-04T21:00:00.000Z",
+    };
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/auth/me")) {
+        return Promise.resolve(jsonResponse({ success: true, data: { user } }));
+      }
+      if (url.endsWith("/users/me") && init?.method === "PATCH") {
+        return Promise.resolve(jsonResponse({ success: true, data: { user: updatedUser } }));
+      }
+      return Promise.resolve(jsonResponse({ success: false }, 404));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderApp("/profile");
+    fireEvent.change(await screen.findByLabelText("Display name"), {
+      target: { value: updatedUser.name },
+    });
+    fireEvent.change(screen.getByLabelText("Email address"), {
+      target: { value: updatedUser.email },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Profile updated");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/users/me",
+      expect.objectContaining({ method: "PATCH", credentials: "include" }),
+    );
+    expect(screen.getAllByText(updatedUser.email).length).toBeGreaterThan(0);
+  });
+
   it("logs in and navigates to the protected dashboard", async () => {
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
       const url = String(input);

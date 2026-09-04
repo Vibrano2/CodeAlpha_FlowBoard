@@ -5,6 +5,7 @@ import { ContentError, ContentLoader } from "../components/content-state";
 import { ProjectNavigation } from "../components/project-navigation";
 import { TaskCard } from "../components/task-card";
 import { TaskForm } from "../components/task-form";
+import { useToast } from "../components/toast";
 import { WorkspaceShell } from "../components/workspace-shell";
 import { useProjectMembers } from "../hooks/use-members";
 import { useProject } from "../hooks/use-projects";
@@ -46,6 +47,7 @@ export const ProjectBoardPage = () => {
   const membersQuery = useProjectMembers(projectId);
   const createTask = useCreateTask();
   const updateStatus = useUpdateTaskStatus();
+  const { showToast } = useToast();
 
   const queries = [projectQuery, boardQuery, tasksQuery, membersQuery];
   const isLoading = queries.some((query) => query.isPending);
@@ -53,7 +55,10 @@ export const ProjectBoardPage = () => {
 
   const handleCreate = (input: CreateTaskInput | UpdateTaskInput) => {
     createTask.mutate({ projectId, input: input as CreateTaskInput }, {
-      onSuccess: () => setShowCreateTask(false),
+      onSuccess: () => {
+        setShowCreateTask(false);
+        showToast({ title: "Task created" });
+      },
     });
   };
 
@@ -163,7 +168,7 @@ export const ProjectBoardPage = () => {
                 </div>
               ) : null}
 
-              <div className="mt-6 overflow-x-auto pb-4">
+              <div className="mt-6 overflow-x-auto pb-4 focus-visible:rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600" tabIndex={0} role="region" aria-label="Kanban board. Scroll horizontally to view all columns.">
                 <div className="grid min-w-[1160px] grid-cols-4 gap-4 xl:min-w-0">
                   {taskColumns.map((column) => {
                     const columnTasks = tasksQuery.data.filter((task) => task.status === column.status);
@@ -179,7 +184,14 @@ export const ProjectBoardPage = () => {
                               task={task}
                               key={task.id}
                               isUpdating={updateStatus.isPending && updateStatus.variables?.taskId === task.id}
-                              onStatusChange={(status) => updateStatus.mutate({ taskId: task.id, projectId, status })}
+                              onStatusChange={(status) => updateStatus.mutate(
+                                { taskId: task.id, projectId, status },
+                                {
+                                  onSuccess: () => showToast({
+                                    title: `Task moved to ${taskColumns.find((item) => item.status === status)?.label ?? status}`,
+                                  }),
+                                },
+                              )}
                             />
                           ))}
                           {columnTasks.length === 0 ? <p className="rounded-xl border border-dashed border-slate-300 px-3 py-8 text-center text-xs text-slate-400">No tasks</p> : null}

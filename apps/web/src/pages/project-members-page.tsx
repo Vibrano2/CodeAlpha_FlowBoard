@@ -2,7 +2,9 @@ import { Search, Trash2, UserPlus, UsersRound } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ContentError, ContentLoader } from "../components/content-state";
+import { ConfirmDialog } from "../components/confirm-dialog";
 import { ProjectNavigation } from "../components/project-navigation";
+import { useToast } from "../components/toast";
 import { WorkspaceShell } from "../components/workspace-shell";
 import {
   useAddProjectMember,
@@ -22,6 +24,8 @@ export const ProjectMembersPage = () => {
   const searchQuery = useUserSearch(searchTerm);
   const addMember = useAddProjectMember();
   const removeMember = useRemoveProjectMember();
+  const { showToast } = useToast();
+  const [memberToRemove, setMemberToRemove] = useState<ProjectMember | null>(null);
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -34,8 +38,8 @@ export const ProjectMembersPage = () => {
   };
 
   const handleRemove = (member: ProjectMember) => {
-    const confirmed = window.confirm(`Remove ${member.user.name} from this project? They will immediately lose access.`);
-    if (confirmed) removeMember.mutate({ projectId, userId: member.userId });
+    removeMember.reset();
+    setMemberToRemove(member);
   };
 
   const isLoading = projectQuery.isPending || membersQuery.isPending;
@@ -103,7 +107,10 @@ export const ProjectMembersPage = () => {
                       errorMessage={searchQuery.isError ? searchQuery.error.message : undefined}
                       addError={addMember.isError ? addMember.error.message : undefined}
                       pendingUserId={addMember.isPending ? addMember.variables?.userId : undefined}
-                      onAdd={(userId) => addMember.mutate({ projectId, userId })}
+                      onAdd={(userId) => addMember.mutate(
+                        { projectId, userId },
+                        { onSuccess: () => showToast({ title: "Member added" }) },
+                      )}
                     />
                   </section>
                 ) : (
@@ -114,6 +121,28 @@ export const ProjectMembersPage = () => {
                   </aside>
                 )}
               </div>
+              <ConfirmDialog
+                open={Boolean(memberToRemove)}
+                title="Remove project member?"
+                description={`${memberToRemove?.user.name ?? "This member"} will immediately lose project access, and their assigned tasks will become unassigned.`}
+                confirmLabel="Remove member"
+                pendingLabel="Removing member..."
+                isPending={removeMember.isPending}
+                errorMessage={removeMember.isError ? removeMember.error.message : undefined}
+                onCancel={() => setMemberToRemove(null)}
+                onConfirm={() => {
+                  if (!memberToRemove) return;
+                  removeMember.mutate(
+                    { projectId, userId: memberToRemove.userId },
+                    {
+                      onSuccess: () => {
+                        setMemberToRemove(null);
+                        showToast({ title: "Member removed" });
+                      },
+                    },
+                  );
+                }}
+              />
             </>
           ) : null}
         </>

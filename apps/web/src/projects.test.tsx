@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
@@ -134,7 +134,6 @@ describe("FlowBoard project UI", () => {
   });
 
   it("requires confirmation before deleting an owned project", async () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/auth/me")) return Promise.resolve(authResponse());
@@ -150,7 +149,10 @@ describe("FlowBoard project UI", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Delete project" }));
 
-    expect(confirm).toHaveBeenCalled();
+    const dialog = screen.getByRole("alertdialog", { name: "Delete project permanently?" });
+    expect(dialog).toBeVisible();
+    expect(within(dialog).getByText(/cannot be undone/)).toBeVisible();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete project" }));
     expect(await screen.findByRole("heading", { name: "My projects" })).toBeVisible();
     expect(fetchMock).toHaveBeenCalledWith(
       `http://localhost:4000/api/v1/projects/${project.id}`,

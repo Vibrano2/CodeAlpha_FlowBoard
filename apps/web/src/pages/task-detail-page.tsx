@@ -2,11 +2,13 @@ import { CalendarDays, CheckCircle2, Clock3, Trash2, UserRound } from "lucide-re
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ContentError, ContentLoader } from "../components/content-state";
+import { ConfirmDialog } from "../components/confirm-dialog";
 import { ActivityList, ActivityLoader } from "../components/activity-list";
 import { ProjectNavigation } from "../components/project-navigation";
 import { TaskDiscussion } from "../components/task-discussion";
 import { TaskForm } from "../components/task-form";
 import { WorkspaceShell } from "../components/workspace-shell";
+import { useToast } from "../components/toast";
 import { useProjectMembers } from "../hooks/use-members";
 import { useProject } from "../hooks/use-projects";
 import { useDeleteTask, useTask, useUpdateTask } from "../hooks/use-tasks";
@@ -21,6 +23,8 @@ export const TaskDetailPage = () => {
   const { taskId = "" } = useParams();
   const navigate = useNavigate();
   const [saved, setSaved] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { showToast } = useToast();
   const taskQuery = useTask(taskId);
   const projectId = taskQuery.data?.projectId ?? "";
   const projectQuery = useProject(projectId);
@@ -34,13 +38,21 @@ export const TaskDetailPage = () => {
 
   const handleUpdate = (input: CreateTaskInput | UpdateTaskInput) => {
     setSaved(false);
-    updateTask.mutate({ taskId, projectId, input }, { onSuccess: () => setSaved(true) });
+    updateTask.mutate({ taskId, projectId, input }, {
+      onSuccess: () => {
+        setSaved(true);
+        showToast({ title: "Task saved" });
+      },
+    });
   };
 
   const handleDelete = () => {
-    if (!task || !window.confirm(`Delete "${task.title}" permanently?`)) return;
+    if (!task) return;
     deleteTask.mutate({ taskId, projectId }, {
-      onSuccess: () => navigate(`/projects/${projectId}/board`, { replace: true }),
+      onSuccess: () => {
+        showToast({ title: "Task deleted" });
+        navigate(`/projects/${projectId}/board`, { replace: true });
+      },
     });
   };
 
@@ -62,7 +74,7 @@ export const TaskDetailPage = () => {
                     </div>
                     <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">{task.title}</h1>
                   </div>
-                  <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-60" type="button" onClick={handleDelete} disabled={deleteTask.isPending}><Trash2 aria-hidden="true" size={17} />{deleteTask.isPending ? "Deleting..." : "Delete task"}</button>
+                  <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-60" type="button" onClick={() => { deleteTask.reset(); setDeleteDialogOpen(true); }} disabled={deleteTask.isPending}><Trash2 aria-hidden="true" size={17} />Delete task</button>
                 </div>
                 <ProjectNavigation projectId={projectId} role={projectQuery.data.currentUserRole} />
               </header>
@@ -101,6 +113,17 @@ export const TaskDetailPage = () => {
                   <TaskDiscussion taskId={taskId} projectId={projectId} currentUserId={currentUser.id} />
                 </aside>
               </div>
+              <ConfirmDialog
+                open={deleteDialogOpen}
+                title="Delete task permanently?"
+                description={`Delete “${task.title}” and all of its comments and related data. This action cannot be undone.`}
+                confirmLabel="Delete task"
+                pendingLabel="Deleting task..."
+                isPending={deleteTask.isPending}
+                errorMessage={deleteTask.isError ? deleteTask.error.message : undefined}
+                onCancel={() => setDeleteDialogOpen(false)}
+                onConfirm={handleDelete}
+              />
             </>
           ) : null}
           {task && (projectQuery.isError || membersQuery.isError) ? <ContentError onRetry={() => { void projectQuery.refetch(); void membersQuery.refetch(); }} /> : null}

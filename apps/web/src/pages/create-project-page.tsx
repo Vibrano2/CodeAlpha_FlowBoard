@@ -1,12 +1,14 @@
 import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ProjectForm } from "../components/project-form";
+import { useToast } from "../components/toast";
 import { WorkspaceShell } from "../components/workspace-shell";
 import { useCreateProject } from "../hooks/use-projects";
 
 export const CreateProjectPage = () => {
   const navigate = useNavigate();
   const createProject = useCreateProject();
+  const { showToast } = useToast();
 
   return (
     <WorkspaceShell>
@@ -25,7 +27,12 @@ export const CreateProjectPage = () => {
               isPending={createProject.isPending}
               errorMessage={createProject.isError ? createProject.error.message : undefined}
               onCancel={() => navigate("/projects")}
-              onSubmit={(input) => createProject.mutate(input, { onSuccess: (project) => navigate(`/projects/${project.id}`, { replace: true }) })}
+              onSubmit={(input) => createProject.mutate(input, {
+                onSuccess: (project) => {
+                  showToast({ title: "Project created" });
+                  navigate(`/projects/${project.id}`, { replace: true });
+                },
+              })}
             />
           </section>
         </div>

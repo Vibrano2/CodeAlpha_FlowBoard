@@ -8,7 +8,7 @@ import {
   Settings,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import type { User } from "../types/auth";
 import { useNotifications } from "../hooks/use-notifications";
 import { Brand } from "./brand";
@@ -48,6 +48,7 @@ export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellPro
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
+    <a className="fixed left-4 top-4 z-50 -translate-y-24 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition-transform focus:translate-y-0" href="#main-content">Skip to main content</a>
     <aside className="fixed inset-y-0 left-0 z-20 hidden w-68 border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
       <div className="px-2">
         <Brand />
@@ -75,16 +76,16 @@ export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellPro
       </nav>
 
       <div className="mt-auto border-t border-slate-200 pt-5">
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
+        <Link className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600" to="/profile">
           <span className="grid size-9 place-items-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
-            {getInitials(user.name)}
+            {user.avatarUrl ? <img className="size-9 rounded-full object-cover" src={user.avatarUrl} alt="" referrerPolicy="no-referrer" /> : getInitials(user.name)}
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-slate-800">{user.name}</p>
             <p className="truncate text-xs text-slate-500">{user.email}</p>
           </div>
           <Settings aria-hidden="true" className="text-slate-400" size={18} />
-        </div>
+        </Link>
         <button className="mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:opacity-60" type="button" onClick={onLogout} disabled={isLoggingOut}>
           <LogOut aria-hidden="true" size={18} />
           {isLoggingOut ? "Signing out..." : "Sign out"}
@@ -97,9 +98,9 @@ export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellPro
         <div className="flex h-16 items-center justify-between px-4 sm:px-6">
           <Brand />
           <div className="flex items-center gap-2">
-            <span className="grid size-9 place-items-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
-              {getInitials(user.name)}
-            </span>
+            <Link className="grid size-9 place-items-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600" to="/profile" aria-label="Open profile">
+              {user.avatarUrl ? <img className="size-9 rounded-full object-cover" src={user.avatarUrl} alt="" referrerPolicy="no-referrer" /> : getInitials(user.name)}
+            </Link>
             <button className="grid size-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:opacity-60" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label="Sign out">
               <LogOut aria-hidden="true" size={18} />
             </button>
@@ -121,7 +122,7 @@ export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellPro
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 sm:py-9 lg:px-10 lg:py-10">
+      <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 sm:py-9 lg:px-10 lg:py-10" id="main-content">
         {children}
       </main>
     </div>
