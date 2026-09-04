@@ -7,7 +7,7 @@ export const ProjectNavigation = ({ projectId, role }: { projectId: string; role
       <li><NavLink className={({ isActive }) => `block border-b-2 px-1 pb-3 text-sm font-semibold ${isActive ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"}`} end to={`/projects/${projectId}`}>Overview</NavLink></li>
       <li><NavLink className={({ isActive }) => `block border-b-2 px-1 pb-3 text-sm font-semibold ${isActive ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"}`} to={`/projects/${projectId}/board`}>Board</NavLink></li>
       <li><NavLink className={({ isActive }) => `block border-b-2 px-1 pb-3 text-sm font-semibold ${isActive ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"}`} to={`/projects/${projectId}/members`}>Members</NavLink></li>
-      <li><span className="block border-b-2 border-transparent px-1 pb-3 text-sm font-semibold text-slate-400" aria-disabled="true">Activity</span></li>
+      <li><NavLink className={({ isActive }) => `block border-b-2 px-1 pb-3 text-sm font-semibold ${isActive ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"}`} to={`/projects/${projectId}/activity`}>Activity</NavLink></li>
       {role === "OWNER" ? <li><NavLink className={({ isActive }) => `block border-b-2 px-1 pb-3 text-sm font-semibold ${isActive ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"}`} to={`/projects/${projectId}/settings`}>Settings</NavLink></li> : null}
     </ul>
   </nav>

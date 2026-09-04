@@ -9,6 +9,7 @@ import {
 } from "../lib/members";
 import { projectQueryKey, projectsQueryKey } from "../lib/projects";
 import { assignedTasksQueryKey, tasksQueryKey } from "../lib/tasks";
+import { projectActivityQueryPrefix } from "../lib/collaboration";
 
 export const useProjectMembers = (projectId: string) =>
   useQuery({
@@ -34,6 +35,7 @@ const invalidateProjectMembership = (
   void queryClient.invalidateQueries({ queryKey: projectsQueryKey, exact: true });
   void queryClient.invalidateQueries({ queryKey: tasksQueryKey(projectId), exact: true });
   void queryClient.invalidateQueries({ queryKey: assignedTasksQueryKey, exact: true });
+  void queryClient.invalidateQueries({ queryKey: projectActivityQueryPrefix(projectId) });
 };
 
 export const useAddProjectMember = () => {

@@ -11,6 +11,7 @@ import { ProjectsPage } from "./pages/projects-page";
 import { RegisterPage } from "./pages/register-page";
 import { TaskDetailPage } from "./pages/task-detail-page";
 import { MyTasksPage } from "./pages/my-tasks-page";
+import { ProjectActivityPage } from "./pages/project-activity-page";
 
 export const App = () => (
   <Routes>
@@ -26,6 +27,7 @@ export const App = () => (
       <Route path="/projects/:projectId" element={<ProjectOverviewPage />} />
       <Route path="/projects/:projectId/board" element={<ProjectBoardPage />} />
       <Route path="/projects/:projectId/members" element={<ProjectMembersPage />} />
+      <Route path="/projects/:projectId/activity" element={<ProjectActivityPage />} />
       <Route path="/projects/:projectId/settings" element={<ProjectSettingsPage />} />
       <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
     </Route>

@@ -1,4 +1,4 @@
-import { CalendarDays, UserRound } from "lucide-react";
+import { CalendarDays, MessageSquare, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getDuePresentation, priorityClasses, priorityLabels, taskColumns, userInitials } from "../lib/task-display";
 import type { Task, TaskStatus } from "../types/task";
@@ -28,6 +28,8 @@ export const TaskCard = ({ task, isUpdating, onStatusChange }: TaskCardProps) =>
         ) : <span className="flex items-center gap-1.5 text-xs text-slate-400"><UserRound aria-hidden="true" size={14} />Unassigned</span>}
         {due ? <span className={`flex shrink-0 items-center gap-1 text-xs font-semibold ${due.className}`} title={due.date}><CalendarDays aria-hidden="true" size={14} />{due.state}</span> : null}
       </div>
+
+      <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-slate-400" aria-label={`${task._count.comments} comments`}><MessageSquare aria-hidden="true" size={14} />{task._count.comments}</div>
 
       <label className="mt-4 block border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500">
         <span className="sr-only">Status for {task.title}</span>

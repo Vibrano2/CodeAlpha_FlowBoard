@@ -14,6 +14,7 @@ import {
   updateTaskStatus,
 } from "../lib/tasks";
 import type { Task } from "../types/task";
+import { projectActivityQueryPrefix } from "../lib/collaboration";
 
 export const useProjectBoard = (projectId: string) =>
   useQuery({
@@ -53,6 +54,7 @@ const storeUpdatedTask = (
   });
   void queryClient.invalidateQueries({ queryKey: tasksQueryKey(task.projectId), exact: true });
   void queryClient.invalidateQueries({ queryKey: assignedTasksQueryKey, exact: true });
+  void queryClient.invalidateQueries({ queryKey: projectActivityQueryPrefix(task.projectId) });
 };
 
 export const useCreateTask = () => {
@@ -90,6 +92,7 @@ export const useDeleteTask = () => {
       );
       void queryClient.invalidateQueries({ queryKey: tasksQueryKey(projectId), exact: true });
       void queryClient.invalidateQueries({ queryKey: assignedTasksQueryKey, exact: true });
+      void queryClient.invalidateQueries({ queryKey: projectActivityQueryPrefix(projectId) });
     },
   });
 };

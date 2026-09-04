@@ -34,6 +34,7 @@ const taskSelect = {
   creator: { select: userSummarySelect },
   board: { select: { id: true, name: true } },
   project: { select: { id: true, name: true } },
+  _count: { select: { comments: true } },
 } satisfies Prisma.TaskSelect;
 
 const normalizeDescription = (description: string | null | undefined) =>

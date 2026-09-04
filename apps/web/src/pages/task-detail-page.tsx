@@ -2,12 +2,15 @@ import { CalendarDays, CheckCircle2, Clock3, Trash2, UserRound } from "lucide-re
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ContentError, ContentLoader } from "../components/content-state";
+import { ActivityList, ActivityLoader } from "../components/activity-list";
 import { ProjectNavigation } from "../components/project-navigation";
+import { TaskDiscussion } from "../components/task-discussion";
 import { TaskForm } from "../components/task-form";
 import { WorkspaceShell } from "../components/workspace-shell";
 import { useProjectMembers } from "../hooks/use-members";
 import { useProject } from "../hooks/use-projects";
 import { useDeleteTask, useTask, useUpdateTask } from "../hooks/use-tasks";
+import { useProjectActivity } from "../hooks/use-collaboration";
 import { getDuePresentation, priorityClasses, priorityLabels } from "../lib/task-display";
 import type { CreateTaskInput, UpdateTaskInput } from "../types/task";
 
@@ -24,6 +27,7 @@ export const TaskDetailPage = () => {
   const membersQuery = useProjectMembers(projectId);
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
+  const activityQuery = useProjectActivity(projectId, taskId);
   const task = taskQuery.data;
   const due = task ? getDuePresentation(task) : null;
   const relatedDataIsLoading = Boolean(task) && (projectQuery.isPending || membersQuery.isPending);
@@ -42,7 +46,7 @@ export const TaskDetailPage = () => {
 
   return (
     <WorkspaceShell>
-      {() => (
+      {(currentUser) => (
         <>
           {taskQuery.isPending || relatedDataIsLoading ? <ContentLoader /> : null}
           {taskQuery.isError ? <ContentError onRetry={() => void taskQuery.refetch()} /> : null}
@@ -66,13 +70,23 @@ export const TaskDetailPage = () => {
               {deleteTask.isError ? <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{deleteTask.error.message}</p> : null}
 
               <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7" aria-labelledby="edit-task-heading">
-                  <div className="mb-6 flex items-center justify-between gap-3">
-                    <div><h2 className="font-bold text-slate-950" id="edit-task-heading">Task details</h2><p className="mt-1 text-sm text-slate-500">Update the work, owner, priority, date, or status.</p></div>
-                    {saved ? <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700" role="status"><CheckCircle2 aria-hidden="true" size={16} />Saved</span> : null}
-                  </div>
-                  <TaskForm task={task} members={membersQuery.data} isSubmitting={updateTask.isPending} errorMessage={updateTask.isError ? updateTask.error.message : undefined} submitLabel="Save task" onSubmit={handleUpdate} />
-                </section>
+                <div className="space-y-6">
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7" aria-labelledby="edit-task-heading">
+                    <div className="mb-6 flex items-center justify-between gap-3">
+                      <div><h2 className="font-bold text-slate-950" id="edit-task-heading">Task details</h2><p className="mt-1 text-sm text-slate-500">Update the work, owner, priority, date, or status.</p></div>
+                      {saved ? <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700" role="status"><CheckCircle2 aria-hidden="true" size={16} />Saved</span> : null}
+                    </div>
+                    <TaskForm task={task} members={membersQuery.data} isSubmitting={updateTask.isPending} errorMessage={updateTask.isError ? updateTask.error.message : undefined} submitLabel="Save task" onSubmit={handleUpdate} />
+                  </section>
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7" aria-labelledby="task-activity-heading">
+                    <h2 className="font-bold text-slate-950" id="task-activity-heading">Task activity</h2>
+                    <div className="mt-5">
+                      {activityQuery.isPending ? <ActivityLoader /> : null}
+                      {activityQuery.isError ? <p className="text-sm text-red-700" role="alert">Could not load task activity. <button className="font-bold underline" type="button" onClick={() => void activityQuery.refetch()}>Try again</button></p> : null}
+                      {activityQuery.data ? <ActivityList activities={activityQuery.data} emptyMessage="No task activity has been recorded yet." /> : null}
+                    </div>
+                  </section>
+                </div>
 
                 <aside className="space-y-6">
                   <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -84,10 +98,7 @@ export const TaskDetailPage = () => {
                       {task.completedAt ? <TaskFact icon={CheckCircle2} label="Completed" value={formatDateTime(task.completedAt)} /> : null}
                     </dl>
                   </section>
-                  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="font-bold text-slate-950">Discussion</h2>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">Task comments and communication will appear here when the next collaboration milestone is enabled.</p>
-                  </section>
+                  <TaskDiscussion taskId={taskId} projectId={projectId} currentUserId={currentUser.id} />
                 </aside>
               </div>
             </>

@@ -84,6 +84,7 @@ const task: Task = {
   creator: project.owner,
   board: { id: boardId, name: board.name },
   project: { id: projectId, name: project.name },
+  _count: { comments: 0 },
 };
 
 const jsonResponse = (body: unknown, status = 200) =>
@@ -157,6 +158,7 @@ describe("FlowBoard task UI", () => {
     expect(screen.getByText("High")).toBeVisible();
     expect(screen.getByText(member.name)).toBeVisible();
     expect(screen.getByText("Overdue")).toBeVisible();
+    expect(screen.getByLabelText("0 comments")).toBeVisible();
   });
 
   it("creates a task from the board and refreshes the correct column", async () => {

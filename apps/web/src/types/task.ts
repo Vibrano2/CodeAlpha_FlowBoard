@@ -30,6 +30,7 @@ export interface Task {
   creator: ProjectOwner;
   board: { id: string; name: string };
   project: { id: string; name: string };
+  _count: { comments: number };
 }
 
 export interface CreateTaskInput {
