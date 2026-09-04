@@ -8,6 +8,10 @@ const server = app.listen(env.port, "0.0.0.0", () => {
   console.info(`FlowBoard API is listening on http://localhost:${env.port}`);
 });
 
+server.requestTimeout = 30_000;
+server.headersTimeout = 35_000;
+server.keepAliveTimeout = 5_000;
+
 const shutdown = (signal: NodeJS.Signals) => {
   console.info(`${signal} received. Closing FlowBoard API.`);
 

@@ -32,11 +32,11 @@ const dueDateSchema = z
 
 export const taskProjectParamsSchema = z.object({
   projectId: z.uuid("Project ID must be a valid UUID."),
-});
+}).strict();
 
 export const taskIdParamsSchema = z.object({
   taskId: z.uuid("Task ID must be a valid UUID."),
-});
+}).strict();
 
 export const listTasksQuerySchema = z.object({
   search: z
@@ -51,7 +51,7 @@ export const listTasksQuerySchema = z.object({
     .union([z.uuid("Assignee ID must be a valid UUID."), z.literal("unassigned")])
     .optional(),
   due: z.enum(taskDueStates).optional(),
-});
+}).strict();
 
 export const createTaskSchema = z.object({
   title: taskTitleSchema,
@@ -59,7 +59,7 @@ export const createTaskSchema = z.object({
   priority: taskPrioritySchema.optional(),
   assigneeId: assigneeIdSchema.optional(),
   dueDate: dueDateSchema.optional(),
-});
+}).strict();
 
 export const updateTaskSchema = z
   .object({
@@ -70,12 +70,13 @@ export const updateTaskSchema = z
     assigneeId: assigneeIdSchema.optional(),
     dueDate: dueDateSchema.optional(),
   })
+  .strict()
   .refine((input) => Object.values(input).some((value) => value !== undefined), {
     message: "Provide at least one task field to update.",
   });
 
-export const updateTaskStatusSchema = z.object({ status: taskStatusSchema });
-export const updateTaskAssigneeSchema = z.object({ assigneeId: assigneeIdSchema });
+export const updateTaskStatusSchema = z.object({ status: taskStatusSchema }).strict();
+export const updateTaskAssigneeSchema = z.object({ assigneeId: assigneeIdSchema }).strict();
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;

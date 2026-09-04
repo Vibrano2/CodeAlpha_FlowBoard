@@ -4,7 +4,7 @@ FlowBoard is a collaborative project management workspace for small teams. It is
 
 ## Project status
 
-Milestones 1 through 8 establish the technical foundation, secure authentication, project and member management, the task lifecycle, comments, activity history, task discovery, notifications, and the polished responsive interface. Final security QA and real-time updates remain reserved for their specified milestones.
+Milestones 1 through 9 establish the complete REST application, polished responsive interface, and final security safeguards. Only the optional real-time WebSocket bonus remains.
 
 | Milestone | Status |
 | --- | --- |
@@ -16,7 +16,7 @@ Milestones 1 through 8 establish the technical foundation, secure authentication
 | 6. Comments and activity | Complete |
 | 7. Search and notifications | Complete |
 | 8. UI and responsive polish | Complete |
-| 9. Security and QA | Not started |
+| 9. Security and QA | Complete |
 | 10. WebSockets bonus | Not started |
 
 ## Milestone 1 features
@@ -134,6 +134,21 @@ Milestones 1 through 8 establish the technical foundation, secure authentication
 - Native browser field validation backed by the existing server-side Zod validation
 - Updated loading, empty, error, pending, and success states across core workflows
 
+## Milestone 9 features
+
+- Strict Zod request schemas that reject unknown body, route, and query fields
+- Safe `400` responses for malformed JSON and `413` responses for oversized payloads
+- JSON-only request-body enforcement with clean `415` errors
+- Origin and Fetch Metadata checks for unsafe cross-site browser requests
+- `Cache-Control: no-store` on API responses that may contain sensitive workspace data
+- Validated HTTP/HTTPS client-origin configuration
+- Configurable trusted-proxy hops for correct production client IP handling
+- Authentication throttling that does not penalize successful sign-ins
+- Bounded server request, header, and keep-alive timeouts
+- Defensive frontend handling for malformed or non-JSON API responses
+- Automated regression coverage for headers, malformed input, oversized input, cross-site requests, and mass-assignment attempts
+- Dependency audit with zero known production vulnerabilities
+
 ## Tech stack
 
 ### Frontend
@@ -229,6 +244,7 @@ Environment files are ignored by Git. Never commit real credentials or secrets.
 | `JWT_SECRET` | Yes | `replace-with-at-least-32-random-characters` | Secret used to sign authentication tokens |
 | `AUTH_COOKIE_NAME` | No | `flowboard_session` | HTTP-only session cookie name |
 | `AUTH_TOKEN_TTL` | No | `7d` | Authentication token lifetime |
+| `TRUST_PROXY_HOPS` | No | `0` | Trusted reverse-proxy hop count; set only for the deployment topology |
 
 ### Web: `apps/web/.env`
 
@@ -430,6 +446,12 @@ Controllers remain thin, services contain business logic, and database access is
 - notification queries and mutations are always scoped to the authenticated user
 - notification records are generated only by backend business actions
 - notification event transactions avoid unnecessary notifications to the actor
+- strict request schemas reject unexpected fields instead of silently accepting them
+- malformed, oversized, and non-JSON bodies return safe client errors
+- unsafe cross-site requests are rejected through Origin and Fetch Metadata checks
+- API responses use `Cache-Control: no-store`
+- production deployments can explicitly configure trusted reverse-proxy hops
+- server timeouts bound slow or incomplete HTTP requests
 
 ## Deployment
 

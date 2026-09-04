@@ -23,7 +23,7 @@ export const searchUsersQuerySchema = z.object({
     .min(3, "Enter at least 3 email characters.")
     .max(254, "Email search is too long.")
     .transform((email) => email.toLowerCase()),
-});
+}).strict();
 
 export const updateProfileSchema = z.object({
   name: z
@@ -33,6 +33,6 @@ export const updateProfileSchema = z.object({
     .max(100, "Name must contain at most 100 characters."),
   email: profileEmailSchema,
   avatarUrl: avatarUrlSchema.nullable(),
-});
+}).strict();
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

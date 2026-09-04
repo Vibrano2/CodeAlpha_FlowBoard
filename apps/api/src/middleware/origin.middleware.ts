@@ -11,8 +11,9 @@ export const verifyRequestOrigin: RequestHandler = (request, _response, next) =>
   }
 
   const origin = request.get("origin");
+  const fetchSite = request.get("sec-fetch-site");
 
-  if (origin && !env.clientOrigins.includes(origin)) {
+  if (fetchSite === "cross-site" || (origin && !env.clientOrigins.includes(origin))) {
     next(new AppError(403, "INVALID_ORIGIN", "This request origin is not allowed."));
     return;
   }
