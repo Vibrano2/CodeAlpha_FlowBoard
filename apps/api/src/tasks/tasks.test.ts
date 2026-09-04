@@ -20,6 +20,8 @@ const databaseMocks = vi.hoisted(() => ({
   taskUpdate: vi.fn(),
   taskDelete: vi.fn(),
   activityCreate: vi.fn(),
+  notificationCreate: vi.fn(),
+  notificationCreateMany: vi.fn(),
   transaction: vi.fn(),
   queryRaw: vi.fn().mockResolvedValue([{ result: 1 }]),
 }));
@@ -40,6 +42,10 @@ vi.mock("../database/prisma.js", () => ({
       delete: databaseMocks.taskDelete,
     },
     activityLog: { create: databaseMocks.activityCreate },
+    notification: {
+      create: databaseMocks.notificationCreate,
+      createMany: databaseMocks.notificationCreateMany,
+    },
   },
 }));
 
@@ -120,6 +126,8 @@ describe("board and task API", () => {
     databaseMocks.taskUpdate.mockResolvedValue(task);
     databaseMocks.taskDelete.mockResolvedValue(task);
     databaseMocks.activityCreate.mockResolvedValue({ id: "activity-id" });
+    databaseMocks.notificationCreate.mockResolvedValue({ id: "notification-id" });
+    databaseMocks.notificationCreateMany.mockResolvedValue({ count: 1 });
     databaseMocks.transaction.mockImplementation(
       async (callback: (client: unknown) => unknown) => callback({
         task: {
@@ -128,6 +136,10 @@ describe("board and task API", () => {
           update: databaseMocks.taskUpdate,
         },
         activityLog: { create: databaseMocks.activityCreate },
+        notification: {
+          create: databaseMocks.notificationCreate,
+          createMany: databaseMocks.notificationCreateMany,
+        },
       }),
     );
   });
@@ -155,6 +167,53 @@ describe("board and task API", () => {
     expect(databaseMocks.taskFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { projectId } }),
     );
+  });
+
+  it("combines project-scoped title, workflow, assignee, and due-date filters", async () => {
+    const response = await authenticatedRequest()
+      .get(`/api/v1/projects/${projectId}/tasks`)
+      .query({
+        search: " board ",
+        status: "TODO",
+        priority: "HIGH",
+        assigneeId,
+        due: "overdue",
+      })
+      .set("Cookie", authCookie());
+
+    expect(response.status).toBe(200);
+    expect(databaseMocks.taskFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          projectId,
+          title: { contains: "board", mode: "insensitive" },
+          status: "TODO",
+          priority: "HIGH",
+          assigneeId,
+          AND: [{ dueDate: { lt: expect.any(Date) }, status: { not: "COMPLETED" } }],
+        },
+      }),
+    );
+  });
+
+  it("supports unassigned filtering and rejects invalid filter values", async () => {
+    const filtered = await authenticatedRequest()
+      .get(`/api/v1/projects/${projectId}/tasks?assigneeId=unassigned`)
+      .set("Cookie", authCookie());
+
+    expect(filtered.status).toBe(200);
+    expect(databaseMocks.taskFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ assigneeId: null }) }),
+    );
+
+    databaseMocks.taskFindMany.mockClear();
+    const invalid = await authenticatedRequest()
+      .get(`/api/v1/projects/${projectId}/tasks?due=someday`)
+      .set("Cookie", authCookie());
+
+    expect(invalid.status).toBe(422);
+    expect(invalid.body.error.code).toBe("VALIDATION_ERROR");
+    expect(databaseMocks.taskFindMany).not.toHaveBeenCalled();
   });
 
   it("does not expose board or task-list data to outsiders", async () => {
@@ -229,6 +288,33 @@ describe("board and task API", () => {
       2,
       expect.objectContaining({ data: expect.objectContaining({ action: "TASK_ASSIGNED" }) }),
     );
+    expect(databaseMocks.notificationCreate).toHaveBeenCalledWith({
+      data: {
+        userId: assigneeId,
+        type: "TASK_ASSIGNED",
+        title: "New task assignment",
+        message: `You were assigned "${task.title}" in Website launch.`,
+        projectId,
+        taskId: expect.any(String),
+      },
+    });
+  });
+
+  it("does not notify a user about their own task assignment", async () => {
+    const selfAssignedTask = { ...task, assigneeId: actorId, assignee: actor };
+    databaseMocks.membershipFindUnique
+      .mockResolvedValueOnce(memberAccess)
+      .mockResolvedValueOnce({ id: "actor-membership" });
+    databaseMocks.taskCreate.mockResolvedValue(selfAssignedTask);
+
+    const response = await authenticatedRequest()
+      .post(`/api/v1/projects/${projectId}/tasks`)
+      .set("Cookie", authCookie())
+      .set("Origin", "http://localhost:5173")
+      .send({ title: task.title, assigneeId: actorId });
+
+    expect(response.status).toBe(201);
+    expect(databaseMocks.notificationCreate).not.toHaveBeenCalled();
   });
 
   it("rejects assignment to a user outside the project", async () => {
@@ -303,6 +389,35 @@ describe("board and task API", () => {
     expect(databaseMocks.activityCreate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ action: "TASK_COMPLETED" }) }),
     );
+  });
+
+  it("notifies relevant users about a task status change without notifying the actor", async () => {
+    const assignedTask = { ...task, assigneeId, assignee };
+    const completedTask = {
+      ...assignedTask,
+      status: "COMPLETED",
+      completedAt: now,
+    };
+    databaseMocks.taskFindUnique.mockResolvedValue(assignedTask);
+    databaseMocks.taskUpdate.mockResolvedValue(completedTask);
+
+    const response = await authenticatedRequest()
+      .patch(`/api/v1/tasks/${taskId}/status`)
+      .set("Cookie", authCookie())
+      .set("Origin", "http://localhost:5173")
+      .send({ status: "COMPLETED" });
+
+    expect(response.status).toBe(200);
+    expect(databaseMocks.notificationCreateMany).toHaveBeenCalledWith({
+      data: [{
+        userId: assigneeId,
+        type: "TASK_STATUS_CHANGED",
+        title: "Task status updated",
+        message: `"${task.title}" moved to Completed.`,
+        projectId,
+        taskId,
+      }],
+    });
   });
 
   it("clears completedAt when a completed task moves back into progress", async () => {

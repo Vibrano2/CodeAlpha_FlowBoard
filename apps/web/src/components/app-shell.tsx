@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import type { User } from "../types/auth";
+import { useNotifications } from "../hooks/use-notifications";
 import { Brand } from "./brand";
 
 interface NavigationItem {
@@ -22,7 +23,7 @@ const navigation: NavigationItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { label: "My Tasks", icon: CheckSquare2, path: "/tasks" },
   { label: "Projects", icon: FolderKanban, path: "/projects" },
-  { label: "Notifications", icon: Bell },
+  { label: "Notifications", icon: Bell, path: "/notifications" },
 ];
 
 interface AppShellProps {
@@ -40,8 +41,13 @@ const getInitials = (name: string) =>
     .join("")
     .toUpperCase();
 
-export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellProps) => (
-  <div className="min-h-screen bg-slate-50 text-slate-950">
+export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellProps) => {
+  const notificationsQuery = useNotifications();
+  const unreadCount = notificationsQuery.data?.unreadCount ?? 0;
+  const unreadLabel = unreadCount > 99 ? "99+" : String(unreadCount);
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-950">
     <aside className="fixed inset-y-0 left-0 z-20 hidden w-68 border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
       <div className="px-2">
         <Brand />
@@ -54,6 +60,9 @@ export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellPro
               {path ? (
                 <NavLink className={({ isActive }) => ["flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600", isActive ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-slate-50"].join(" ")} to={path}>
                   <Icon aria-hidden="true" size={19} /><span>{label}</span>
+                  {label === "Notifications" && unreadCount > 0 ? (
+                    <span className="ml-auto rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold text-white" aria-label={`${unreadCount} unread notifications`}>{unreadLabel}</span>
+                  ) : null}
                 </NavLink>
               ) : (
                 <span className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-400" aria-disabled="true">
@@ -97,10 +106,15 @@ export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellPro
           </div>
         </div>
         <nav className="border-t border-slate-100 px-4 sm:px-6" aria-label="Mobile navigation">
-          <ul className="flex gap-5">
+          <ul className="flex gap-4 overflow-x-auto">
             {navigation.filter((item) => item.path).map(({ label, path }) => (
               <li key={label}>
-                <NavLink className={({ isActive }) => `block border-b-2 py-2.5 text-xs font-semibold ${isActive ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500"}`} to={path!}>{label}</NavLink>
+                <NavLink className={({ isActive }) => `flex items-center gap-1.5 whitespace-nowrap border-b-2 py-2.5 text-xs font-semibold ${isActive ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500"}`} to={path!}>
+                  {label}
+                  {label === "Notifications" && unreadCount > 0 ? (
+                    <span className="rounded-full bg-brand-600 px-1.5 py-0.5 text-[9px] font-bold text-white" aria-label={`${unreadCount} unread notifications`}>{unreadLabel}</span>
+                  ) : null}
+                </NavLink>
               </li>
             ))}
           </ul>
@@ -111,5 +125,6 @@ export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellPro
         {children}
       </main>
     </div>
-  </div>
-);
+    </div>
+  );
+};

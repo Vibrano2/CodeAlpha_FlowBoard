@@ -17,6 +17,7 @@ const databaseMocks = vi.hoisted(() => ({
   membershipDelete: vi.fn(),
   taskUpdateMany: vi.fn(),
   activityCreate: vi.fn(),
+  notificationCreate: vi.fn(),
   transaction: vi.fn(),
   queryRaw: vi.fn().mockResolvedValue([{ result: 1 }]),
 }));
@@ -37,6 +38,7 @@ vi.mock("../database/prisma.js", () => ({
     },
     task: { updateMany: databaseMocks.taskUpdateMany },
     activityLog: { create: databaseMocks.activityCreate },
+    notification: { create: databaseMocks.notificationCreate },
   },
 }));
 
@@ -69,12 +71,12 @@ const membership = {
 
 const ownerAccess = {
   role: "OWNER",
-  project: { id: projectId, ownerId },
+  project: { id: projectId, name: "Website launch", ownerId },
 };
 
 const memberAccess = {
   role: "MEMBER",
-  project: { id: projectId, ownerId },
+  project: { id: projectId, name: "Website launch", ownerId },
 };
 
 const authCookie = () => {
@@ -96,6 +98,7 @@ describe("user search and project member API", () => {
     databaseMocks.membershipDelete.mockResolvedValue(membership);
     databaseMocks.taskUpdateMany.mockResolvedValue({ count: 0 });
     databaseMocks.activityCreate.mockResolvedValue({ id: "activity-id" });
+    databaseMocks.notificationCreate.mockResolvedValue({ id: "notification-id" });
     databaseMocks.transaction.mockImplementation(async (operations: unknown[]) => Promise.all(operations));
   });
 
@@ -178,6 +181,15 @@ describe("user search and project member API", () => {
         actorId: ownerId,
         action: "MEMBER_ADDED",
         metadata: { memberId },
+      },
+    });
+    expect(databaseMocks.notificationCreate).toHaveBeenCalledWith({
+      data: {
+        userId: memberId,
+        type: "PROJECT_MEMBER_ADDED",
+        title: "Added to project",
+        message: "You were added to Website launch.",
+        projectId,
       },
     });
     expect(databaseMocks.transaction).toHaveBeenCalledTimes(1);

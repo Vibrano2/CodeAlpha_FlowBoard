@@ -1,9 +1,10 @@
-import { ActivityAction, Prisma, TaskStatus } from "@prisma/client";
+import { ActivityAction, NotificationType, Prisma, TaskStatus } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../database/prisma.js";
 import { AppError } from "../utils/app-error.js";
 import type {
   CreateTaskInput,
+  ListTasksQuery,
   UpdateTaskInput,
 } from "../validators/task.validators.js";
 import { requireProjectMember } from "./project-access.service.js";
@@ -39,6 +40,13 @@ const taskSelect = {
 
 const normalizeDescription = (description: string | null | undefined) =>
   description === undefined ? undefined : description || null;
+
+const taskStatusLabels: Record<TaskStatus, string> = {
+  TODO: "To Do",
+  IN_PROGRESS: "In Progress",
+  REVIEW: "Review",
+  COMPLETED: "Completed",
+};
 
 const requireAssigneeMembership = async (projectId: string, assigneeId: string) => {
   const membership = await prisma.projectMember.findUnique({
@@ -77,11 +85,40 @@ const mapMissingTask = (error: unknown): never => {
   throw error;
 };
 
-export const listProjectTasks = async (projectId: string, actorId: string) => {
+export const listProjectTasks = async (
+  projectId: string,
+  actorId: string,
+  filters: ListTasksQuery,
+) => {
   await requireProjectMember(projectId, actorId);
 
+  const now = new Date();
+  const dueSoon = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const dueFilter: Prisma.TaskWhereInput | undefined =
+    filters.due === "overdue"
+      ? { dueDate: { lt: now }, status: { not: TaskStatus.COMPLETED } }
+      : filters.due === "due_soon"
+        ? {
+            dueDate: { gte: now, lte: dueSoon },
+            status: { not: TaskStatus.COMPLETED },
+          }
+        : filters.due === "no_due_date"
+          ? { dueDate: null }
+          : undefined;
+
   return prisma.task.findMany({
-    where: { projectId },
+    where: {
+      projectId,
+      ...(filters.search
+        ? { title: { contains: filters.search, mode: "insensitive" } }
+        : {}),
+      ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.priority ? { priority: filters.priority } : {}),
+      ...(filters.assigneeId
+        ? { assigneeId: filters.assigneeId === "unassigned" ? null : filters.assigneeId }
+        : {}),
+      ...(dueFilter ? { AND: [dueFilter] } : {}),
+    },
     orderBy: [{ status: "asc" }, { position: "asc" }, { createdAt: "asc" }],
     select: taskSelect,
   });
@@ -161,6 +198,19 @@ export const createProjectTask = async (
           metadata: { assigneeId: input.assigneeId },
         },
       });
+
+      if (input.assigneeId !== actorId) {
+        await transaction.notification.create({
+          data: {
+            userId: input.assigneeId,
+            type: NotificationType.TASK_ASSIGNED,
+            title: "New task assignment",
+            message: `You were assigned "${task.title}" in ${task.project.name}.`,
+            projectId,
+            taskId,
+          },
+        });
+      }
     }
 
     return task;
@@ -239,6 +289,24 @@ export const updateTaskById = async (
             },
           });
         }
+
+        const recipients = [updatedTask.assigneeId, updatedTask.createdBy].filter(
+          (userId, index, values): userId is string =>
+            Boolean(userId) && userId !== actorId && values.indexOf(userId) === index,
+        );
+
+        if (recipients.length > 0) {
+          await transaction.notification.createMany({
+            data: recipients.map((userId) => ({
+              userId,
+              type: NotificationType.TASK_STATUS_CHANGED,
+              title: "Task status updated",
+              message: `"${updatedTask.title}" moved to ${taskStatusLabels[input.status!]}.`,
+              projectId: existingTask.projectId,
+              taskId,
+            })),
+          });
+        }
       }
 
       if (assigneeChanged && input.assigneeId) {
@@ -254,6 +322,19 @@ export const updateTaskById = async (
             },
           },
         });
+
+        if (input.assigneeId !== actorId) {
+          await transaction.notification.create({
+            data: {
+              userId: input.assigneeId,
+              type: NotificationType.TASK_ASSIGNED,
+              title: "New task assignment",
+              message: `You were assigned "${updatedTask.title}" in ${updatedTask.project.name}.`,
+              projectId: existingTask.projectId,
+              taskId,
+            },
+          });
+        }
       }
 
       return updatedTask;

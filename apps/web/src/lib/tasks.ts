@@ -2,6 +2,7 @@ import type {
   Board,
   CreateTaskInput,
   Task,
+  TaskFilters,
   TaskStatus,
   UpdateTaskInput,
 } from "../types/task";
@@ -14,8 +15,10 @@ interface TaskResponse {
 
 export const boardQueryKey = (projectId: string) =>
   ["projects", projectId, "board"] as const;
-export const tasksQueryKey = (projectId: string) =>
+export const tasksQueryPrefix = (projectId: string) =>
   ["projects", projectId, "tasks"] as const;
+export const tasksQueryKey = (projectId: string, filters: TaskFilters = {}) =>
+  [...tasksQueryPrefix(projectId), filters] as const;
 export const taskQueryKey = (taskId: string) => ["tasks", taskId] as const;
 export const assignedTasksQueryKey = ["tasks", "assigned"] as const;
 
@@ -26,9 +29,14 @@ export const getProjectBoard = async (projectId: string) => {
   return response.data.board;
 };
 
-export const getProjectTasks = async (projectId: string) => {
+export const getProjectTasks = async (projectId: string, filters: TaskFilters = {}) => {
+  const searchParams = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) searchParams.set(key, value);
+  });
+  const query = searchParams.toString();
   const response = await apiRequest<{ success: true; data: { tasks: Task[] } }>(
-    `/projects/${projectId}/tasks`,
+    `/projects/${projectId}/tasks${query ? `?${query}` : ""}`,
   );
   return response.data.tasks;
 };

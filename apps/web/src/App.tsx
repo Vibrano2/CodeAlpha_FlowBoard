@@ -12,6 +12,7 @@ import { RegisterPage } from "./pages/register-page";
 import { TaskDetailPage } from "./pages/task-detail-page";
 import { MyTasksPage } from "./pages/my-tasks-page";
 import { ProjectActivityPage } from "./pages/project-activity-page";
+import { NotificationsPage } from "./pages/notifications-page";
 
 export const App = () => (
   <Routes>
@@ -23,6 +24,7 @@ export const App = () => (
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/projects" element={<ProjectsPage />} />
       <Route path="/tasks" element={<MyTasksPage />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/projects/new" element={<CreateProjectPage />} />
       <Route path="/projects/:projectId" element={<ProjectOverviewPage />} />
       <Route path="/projects/:projectId/board" element={<ProjectBoardPage />} />

@@ -6,7 +6,7 @@ export const requireProjectMember = async (projectId: string, userId: string) =>
     where: { projectId_userId: { projectId, userId } },
     select: {
       role: true,
-      project: { select: { id: true, ownerId: true } },
+      project: { select: { id: true, name: true, ownerId: true } },
     },
   });
 

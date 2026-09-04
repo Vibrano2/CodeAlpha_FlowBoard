@@ -21,6 +21,7 @@ const databaseMocks = vi.hoisted(() => ({
   commentDelete: vi.fn(),
   activityFindMany: vi.fn(),
   activityCreate: vi.fn(),
+  notificationCreateMany: vi.fn(),
   transaction: vi.fn(),
   queryRaw: vi.fn().mockResolvedValue([{ result: 1 }]),
 }));
@@ -46,6 +47,7 @@ vi.mock("../database/prisma.js", () => ({
       findMany: databaseMocks.activityFindMany,
       create: databaseMocks.activityCreate,
     },
+    notification: { createMany: databaseMocks.notificationCreateMany },
   },
 }));
 
@@ -102,7 +104,13 @@ describe("comment and activity API", () => {
     vi.clearAllMocks();
     databaseMocks.userFindUnique.mockResolvedValue(user);
     databaseMocks.membershipFindUnique.mockResolvedValue(memberAccess);
-    databaseMocks.taskFindUnique.mockResolvedValue({ id: taskId, projectId });
+    databaseMocks.taskFindUnique.mockResolvedValue({
+      id: taskId,
+      projectId,
+      title: "Build the project board",
+      createdBy: userId,
+      assigneeId: otherUserId,
+    });
     databaseMocks.taskFindFirst.mockResolvedValue({ id: taskId });
     databaseMocks.commentFindMany.mockResolvedValue([comment]);
     databaseMocks.commentFindUnique.mockResolvedValue({
@@ -116,10 +124,12 @@ describe("comment and activity API", () => {
     databaseMocks.commentDelete.mockResolvedValue(comment);
     databaseMocks.activityFindMany.mockResolvedValue([activity]);
     databaseMocks.activityCreate.mockResolvedValue(activity);
+    databaseMocks.notificationCreateMany.mockResolvedValue({ count: 1 });
     databaseMocks.transaction.mockImplementation(
       async (callback: (client: unknown) => unknown) => callback({
         comment: { create: databaseMocks.commentCreate },
         activityLog: { create: databaseMocks.activityCreate },
+        notification: { createMany: databaseMocks.notificationCreateMany },
       }),
     );
   });
@@ -177,6 +187,16 @@ describe("comment and activity API", () => {
         action: "COMMENT_ADDED",
         metadata: { commentId: expect.any(String) },
       },
+    });
+    expect(databaseMocks.notificationCreateMany).toHaveBeenCalledWith({
+      data: [{
+        userId: otherUserId,
+        type: "COMMENT_ADDED",
+        title: "New task comment",
+        message: `${user.name} commented on "Build the project board".`,
+        projectId,
+        taskId,
+      }],
     });
     expect(databaseMocks.transaction).toHaveBeenCalledTimes(1);
   });

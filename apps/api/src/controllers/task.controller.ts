@@ -9,6 +9,7 @@ import {
 } from "../services/task.service.js";
 import {
   createTaskSchema,
+  listTasksQuerySchema,
   taskIdParamsSchema,
   taskProjectParamsSchema,
   updateTaskAssigneeSchema,
@@ -23,7 +24,8 @@ export const listAssignedTasks: RequestHandler = async (request, response) => {
 
 export const listTasks: RequestHandler = async (request, response) => {
   const { projectId } = taskProjectParamsSchema.parse(request.params);
-  const tasks = await listProjectTasks(projectId, request.authUser!.id);
+  const filters = listTasksQuerySchema.parse(request.query);
+  const tasks = await listProjectTasks(projectId, request.authUser!.id, filters);
   response.status(200).json({ success: true, data: { tasks } });
 };
 

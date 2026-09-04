@@ -5,6 +5,7 @@ import { projectRouter } from "./project.routes.js";
 import { userRouter } from "./user.routes.js";
 import { taskRouter } from "./task.routes.js";
 import { commentRouter } from "./comment.routes.js";
+import { notificationRouter } from "./notification.routes.js";
 
 export const apiRouter = Router();
 
@@ -14,3 +15,4 @@ apiRouter.use("/projects", projectRouter);
 apiRouter.use("/users", userRouter);
 apiRouter.use("/tasks", taskRouter);
 apiRouter.use("/comments", commentRouter);
+apiRouter.use("/notifications", notificationRouter);

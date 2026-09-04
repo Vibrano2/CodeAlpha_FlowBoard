@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const taskStatuses = ["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"] as const;
 export const taskPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+export const taskDueStates = ["overdue", "due_soon", "no_due_date"] as const;
 
 const taskTitleSchema = z
   .string()
@@ -37,6 +38,21 @@ export const taskIdParamsSchema = z.object({
   taskId: z.uuid("Task ID must be a valid UUID."),
 });
 
+export const listTasksQuerySchema = z.object({
+  search: z
+    .string()
+    .trim()
+    .max(200, "Task search must contain at most 200 characters.")
+    .optional()
+    .transform((value) => value || undefined),
+  status: taskStatusSchema.optional(),
+  priority: taskPrioritySchema.optional(),
+  assigneeId: z
+    .union([z.uuid("Assignee ID must be a valid UUID."), z.literal("unassigned")])
+    .optional(),
+  due: z.enum(taskDueStates).optional(),
+});
+
 export const createTaskSchema = z.object({
   title: taskTitleSchema,
   description: taskDescriptionSchema.optional(),
@@ -63,3 +79,4 @@ export const updateTaskAssigneeSchema = z.object({ assigneeId: assigneeIdSchema 
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;

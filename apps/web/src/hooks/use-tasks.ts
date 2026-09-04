@@ -10,10 +10,11 @@ import {
   getTask,
   taskQueryKey,
   tasksQueryKey,
+  tasksQueryPrefix,
   updateTask,
   updateTaskStatus,
 } from "../lib/tasks";
-import type { Task } from "../types/task";
+import type { Task, TaskFilters } from "../types/task";
 import { projectActivityQueryPrefix } from "../lib/collaboration";
 
 export const useProjectBoard = (projectId: string) =>
@@ -23,11 +24,12 @@ export const useProjectBoard = (projectId: string) =>
     enabled: Boolean(projectId),
   });
 
-export const useProjectTasks = (projectId: string) =>
+export const useProjectTasks = (projectId: string, filters: TaskFilters = {}) =>
   useQuery({
-    queryKey: tasksQueryKey(projectId),
-    queryFn: () => getProjectTasks(projectId),
+    queryKey: tasksQueryKey(projectId, filters),
+    queryFn: () => getProjectTasks(projectId, filters),
     enabled: Boolean(projectId),
+    placeholderData: (previousData) => previousData,
   });
 
 export const useTask = (taskId: string) =>
@@ -52,7 +54,7 @@ const storeUpdatedTask = (
       ? currentTasks.map((currentTask) => currentTask.id === task.id ? task : currentTask)
       : [...currentTasks, task];
   });
-  void queryClient.invalidateQueries({ queryKey: tasksQueryKey(task.projectId), exact: true });
+  void queryClient.invalidateQueries({ queryKey: tasksQueryPrefix(task.projectId) });
   void queryClient.invalidateQueries({ queryKey: assignedTasksQueryKey, exact: true });
   void queryClient.invalidateQueries({ queryKey: projectActivityQueryPrefix(task.projectId) });
 };
@@ -90,7 +92,7 @@ export const useDeleteTask = () => {
       queryClient.setQueryData<Task[]>(tasksQueryKey(projectId), (currentTasks) =>
         currentTasks?.filter((task) => task.id !== taskId),
       );
-      void queryClient.invalidateQueries({ queryKey: tasksQueryKey(projectId), exact: true });
+      void queryClient.invalidateQueries({ queryKey: tasksQueryPrefix(projectId) });
       void queryClient.invalidateQueries({ queryKey: assignedTasksQueryKey, exact: true });
       void queryClient.invalidateQueries({ queryKey: projectActivityQueryPrefix(projectId) });
     },

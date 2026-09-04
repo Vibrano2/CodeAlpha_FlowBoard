@@ -1,4 +1,4 @@
-import { ActivityAction, Prisma } from "@prisma/client";
+import { ActivityAction, NotificationType, Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../database/prisma.js";
 import { AppError } from "../utils/app-error.js";
@@ -23,7 +23,13 @@ const commentSelect = {
 const loadAuthorizedTask = async (taskId: string, actorId: string) => {
   const task = await prisma.task.findUnique({
     where: { id: taskId },
-    select: { id: true, projectId: true },
+    select: {
+      id: true,
+      projectId: true,
+      title: true,
+      createdBy: true,
+      assigneeId: true,
+    },
   });
 
   if (!task) {
@@ -108,6 +114,24 @@ export const createTaskComment = async (
         metadata: { commentId },
       },
     });
+
+    const recipients = [task.assigneeId, task.createdBy].filter(
+      (userId, index, values): userId is string =>
+        Boolean(userId) && userId !== actorId && values.indexOf(userId) === index,
+    );
+
+    if (recipients.length > 0) {
+      await transaction.notification.createMany({
+        data: recipients.map((userId) => ({
+          userId,
+          type: NotificationType.COMMENT_ADDED,
+          title: "New task comment",
+          message: `${comment.user.name} commented on "${task.title}".`,
+          projectId: task.projectId,
+          taskId,
+        })),
+      });
+    }
 
     return comment;
   });

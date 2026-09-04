@@ -1,4 +1,4 @@
-import { ActivityAction, Prisma, ProjectRole } from "@prisma/client";
+import { ActivityAction, NotificationType, Prisma, ProjectRole } from "@prisma/client";
 import { prisma } from "../database/prisma.js";
 import { AppError } from "../utils/app-error.js";
 import { requireProjectMember, requireProjectOwner } from "./project-access.service.js";
@@ -29,7 +29,7 @@ export const addProjectMember = async (
   actorId: string,
   userId: string,
 ) => {
-  await requireProjectOwner(projectId, actorId);
+  const project = await requireProjectOwner(projectId, actorId);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -61,6 +61,15 @@ export const addProjectMember = async (
           actorId,
           action: ActivityAction.MEMBER_ADDED,
           metadata: { memberId: userId },
+        },
+      }),
+      prisma.notification.create({
+        data: {
+          userId,
+          type: NotificationType.PROJECT_MEMBER_ADDED,
+          title: "Added to project",
+          message: `You were added to ${project.name}.`,
+          projectId,
         },
       }),
     ]);

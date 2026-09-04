@@ -2,6 +2,15 @@ import type { ProjectOwner } from "./project";
 
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "COMPLETED";
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+export type TaskDueState = "overdue" | "due_soon" | "no_due_date";
+
+export interface TaskFilters {
+  search?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  assigneeId?: string | "unassigned";
+  due?: TaskDueState;
+}
 
 export interface Board {
   id: string;

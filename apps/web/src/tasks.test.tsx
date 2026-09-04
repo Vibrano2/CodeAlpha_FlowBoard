@@ -154,11 +154,50 @@ describe("FlowBoard task UI", () => {
     expect(screen.getByRole("heading", { name: "In Progress" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Review" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Completed" })).toBeVisible();
-    expect(screen.getByRole("link", { name: task.title })).toBeVisible();
-    expect(screen.getByText("High")).toBeVisible();
-    expect(screen.getByText(member.name)).toBeVisible();
-    expect(screen.getByText("Overdue")).toBeVisible();
-    expect(screen.getByLabelText("0 comments")).toBeVisible();
+    const taskLink = screen.getByRole("link", { name: task.title });
+    const taskCard = taskLink.closest("article");
+    expect(taskCard).not.toBeNull();
+    expect(taskLink).toBeVisible();
+    expect(within(taskCard!).getByText("High")).toBeVisible();
+    expect(within(taskCard!).getByText(member.name)).toBeVisible();
+    expect(within(taskCard!).getByText("Overdue")).toBeVisible();
+    expect(within(taskCard!).getByLabelText("0 comments")).toBeVisible();
+  });
+
+  it("combines board filters and shows a distinct no-results state", async () => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const base = baseResponse(input);
+      if (base) return Promise.resolve(base);
+      const url = String(input);
+      if (url.includes(`/projects/${projectId}/tasks`)) {
+        const tasks = url.includes("search=missing") ? [] : [task];
+        return Promise.resolve(jsonResponse({ success: true, data: { tasks } }));
+      }
+      return Promise.resolve(jsonResponse({ success: false }, 404));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderApp(`/projects/${projectId}/board`);
+
+    await screen.findByRole("link", { name: task.title });
+    fireEvent.change(screen.getByLabelText("Search tasks"), { target: { value: "board" } });
+    fireEvent.change(screen.getByLabelText("Status filter"), { target: { value: "TODO" } });
+    fireEvent.change(screen.getByLabelText("Priority filter"), { target: { value: "HIGH" } });
+    fireEvent.change(screen.getByLabelText("Assignee filter"), { target: { value: member.id } });
+    fireEvent.change(screen.getByLabelText("Due date filter"), { target: { value: "overdue" } });
+
+    await waitFor(() => expect(fetchMock.mock.calls.some(([input]) => {
+      const url = String(input);
+      return url.includes("search=board")
+        && url.includes("status=TODO")
+        && url.includes("priority=HIGH")
+        && url.includes(`assigneeId=${member.id}`)
+        && url.includes("due=overdue");
+    })).toBe(true));
+
+    fireEvent.change(screen.getByLabelText("Search tasks"), { target: { value: "missing" } });
+    expect(await screen.findByText("No matching tasks.")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(await screen.findByRole("link", { name: task.title })).toBeVisible();
   });
 
   it("creates a task from the board and refreshes the correct column", async () => {
