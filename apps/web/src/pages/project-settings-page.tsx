@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ContentError, ContentLoader } from "../components/content-state";
 import { ProjectForm } from "../components/project-form";
 import { ProjectNavigation } from "../components/project-navigation";
+import { useToast } from "../components/toast";
 import { WorkspaceShell } from "../components/workspace-shell";
 import { useDeleteProject, useProject, useUpdateProject } from "../hooks/use-projects";
 
@@ -12,12 +13,18 @@ export const ProjectSettingsPage = () => {
   const projectQuery = useProject(projectId);
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
+  const { showToast } = useToast();
 
   const handleDelete = () => {
     if (!projectQuery.data) return;
     const confirmed = window.confirm(`Delete “${projectQuery.data.name}”? This permanently removes the project and all associated data.`);
     if (!confirmed) return;
-    deleteProject.mutate(projectId, { onSuccess: () => navigate("/projects", { replace: true }) });
+    deleteProject.mutate(projectId, {
+      onSuccess: () => {
+        showToast(`“${projectQuery.data.name}” was deleted.`);
+        navigate("/projects", { replace: true });
+      },
+    });
   };
 
   return (
@@ -50,7 +57,9 @@ export const ProjectSettingsPage = () => {
                         isPending={updateProject.isPending}
                         errorMessage={updateProject.isError ? updateProject.error.message : undefined}
                         onCancel={() => navigate(`/projects/${projectId}`)}
-                        onSubmit={(input) => updateProject.mutate({ projectId, input })}
+                        onSubmit={(input) => updateProject.mutate({ projectId, input }, {
+                          onSuccess: () => showToast("Project settings saved."),
+                        })}
                       />
                     </div>
                   </section>

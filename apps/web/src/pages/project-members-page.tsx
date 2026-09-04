@@ -3,6 +3,7 @@ import { type FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ContentError, ContentLoader } from "../components/content-state";
 import { ProjectNavigation } from "../components/project-navigation";
+import { useToast } from "../components/toast";
 import { WorkspaceShell } from "../components/workspace-shell";
 import {
   useAddProjectMember,
@@ -22,6 +23,7 @@ export const ProjectMembersPage = () => {
   const searchQuery = useUserSearch(searchTerm);
   const addMember = useAddProjectMember();
   const removeMember = useRemoveProjectMember();
+  const { showToast } = useToast();
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -35,7 +37,11 @@ export const ProjectMembersPage = () => {
 
   const handleRemove = (member: ProjectMember) => {
     const confirmed = window.confirm(`Remove ${member.user.name} from this project? They will immediately lose access.`);
-    if (confirmed) removeMember.mutate({ projectId, userId: member.userId });
+    if (confirmed) {
+      removeMember.mutate({ projectId, userId: member.userId }, {
+        onSuccess: () => showToast(`${member.user.name} was removed from the project.`),
+      });
+    }
   };
 
   const isLoading = projectQuery.isPending || membersQuery.isPending;
@@ -103,7 +109,12 @@ export const ProjectMembersPage = () => {
                       errorMessage={searchQuery.isError ? searchQuery.error.message : undefined}
                       addError={addMember.isError ? addMember.error.message : undefined}
                       pendingUserId={addMember.isPending ? addMember.variables?.userId : undefined}
-                      onAdd={(userId) => addMember.mutate({ projectId, userId })}
+                      onAdd={(userId) => {
+                        const addedUser = searchQuery.data?.find((user) => user.id === userId);
+                        addMember.mutate({ projectId, userId }, {
+                          onSuccess: () => showToast(`${addedUser?.name ?? "Member"} was added to the project.`),
+                        });
+                      }}
                     />
                   </section>
                 ) : (

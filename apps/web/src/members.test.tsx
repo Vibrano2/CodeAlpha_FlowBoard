@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { ToastProvider } from "./components/toast";
 import { createAppQueryClient } from "./lib/query-client";
 
 const owner = {
@@ -63,7 +64,7 @@ const renderMembers = () => {
   const queryClient = createAppQueryClient(true);
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[`/projects/${projectId}/members`]}><App /></MemoryRouter>
+      <MemoryRouter initialEntries={[`/projects/${projectId}/members`]}><ToastProvider><App /></ToastProvider></MemoryRouter>
     </QueryClientProvider>,
   );
 };
