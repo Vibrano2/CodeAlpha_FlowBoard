@@ -20,7 +20,8 @@
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "db:generate": "npm run db:generate --workspace @flowboard/api",
     "db:validate": "npm run db:validate --workspace @flowboard/api",
-    "db:check": "npm run db:check --workspace @flowboard/api"
+    "db:check": "npm run db:check --workspace @flowboard/api",
+    "db:migrate": "npm run db:migrate --workspace @flowboard/api"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

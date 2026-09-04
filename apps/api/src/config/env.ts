@@ -6,6 +6,11 @@ const environmentSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
   DATABASE_URL: z.string().trim().min(1, "DATABASE_URL is required"),
   CLIENT_ORIGIN: z.string().trim().default("http://localhost:5173"),
+  JWT_SECRET: z
+    .string()
+    .min(32, "JWT_SECRET must contain at least 32 characters"),
+  AUTH_COOKIE_NAME: z.string().trim().min(1).default("flowboard_session"),
+  AUTH_TOKEN_TTL: z.enum(["1d", "7d", "30d"]).default("7d"),
 });
 
 const result = environmentSchema.safeParse(process.env);
@@ -27,4 +32,7 @@ export const env = Object.freeze({
   port: result.data.PORT,
   databaseUrl: result.data.DATABASE_URL,
   clientOrigins,
+  jwtSecret: result.data.JWT_SECRET,
+  authCookieName: result.data.AUTH_COOKIE_NAME,
+  authTokenTtl: result.data.AUTH_TOKEN_TTL,
 });

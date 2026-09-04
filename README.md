@@ -4,12 +4,12 @@ FlowBoard is a collaborative project management workspace for small teams. It is
 
 ## Project status
 
-Milestone 1 establishes the technical foundation only. Authentication, projects, members, tasks, comments, activity, notifications, and real-time updates are intentionally reserved for their specified milestones.
+Milestones 1 and 2 establish the technical foundation and secure user authentication. Projects, members, tasks, comments, activity, notifications, and real-time updates remain reserved for their specified milestones.
 
 | Milestone | Status |
 | --- | --- |
 | 1. Foundation | Complete |
-| 2. Authentication | Not started |
+| 2. Authentication | Complete |
 | 3. Projects | Not started |
 | 4. Members | Not started |
 | 5. Board and tasks | Not started |
@@ -33,6 +33,23 @@ Milestone 1 establishes the technical foundation only. Authentication, projects,
 - Automated API and frontend foundation tests
 - Root scripts for development, type checking, testing, linting, and production builds
 
+## Milestone 2 features
+
+- User database model and PostgreSQL migration
+- Secure registration with normalized unique email addresses
+- bcrypt password hashing with no password hashes in API responses
+- Generic login failures that do not reveal account existence
+- Signed JWT sessions stored in HTTP-only, SameSite cookies
+- Production-only Secure cookie enforcement
+- Current-session and logout endpoints
+- Authentication middleware that clears invalid or expired cookies
+- Rate limiting on registration and login endpoints
+- CORS and Origin validation for browser state-changing requests
+- Responsive login and registration screens with accessible form controls
+- Protected dashboard routes and automatic unauthenticated redirects
+- Authenticated user identity and logout in the application shell
+- Honest authenticated-dashboard empty states without fabricated statistics
+
 ## Tech stack
 
 ### Frontend
@@ -52,6 +69,8 @@ Milestone 1 establishes the technical foundation only. Authentication, projects,
 - PostgreSQL
 - Prisma ORM 6
 - Zod
+- bcrypt
+- JSON Web Tokens in HTTP-only cookies
 
 ### Quality
 
@@ -123,6 +142,9 @@ Environment files are ignored by Git. Never commit real credentials or secrets.
 | `PORT` | Yes | `4000` | API listen port |
 | `DATABASE_URL` | Yes | `postgresql://flowboard:password@localhost:5432/flowboard?schema=public` | PostgreSQL connection string |
 | `CLIENT_ORIGIN` | Yes | `http://localhost:5173` | Allowed browser origin; comma-separate multiple origins |
+| `JWT_SECRET` | Yes | `replace-with-at-least-32-random-characters` | Secret used to sign authentication tokens |
+| `AUTH_COOKIE_NAME` | No | `flowboard_session` | HTTP-only session cookie name |
+| `AUTH_TOKEN_TTL` | No | `7d` | Authentication token lifetime |
 
 ### Web: `apps/web/.env`
 
@@ -153,10 +175,11 @@ Then validate the Prisma schema, generate the client, and check the connection:
 ```bash
 npm run db:validate
 npm run db:generate
+npm run db:migrate
 npm run db:check
 ```
 
-Domain models and the first migration will be added with their implementation milestones. Milestone 1 uses a direct `SELECT 1` query to verify the database connection without introducing future entities early.
+The migration creates the Milestone 2 `users` table. Future domain models are added only with their implementation milestones.
 
 ## Running FlowBoard
 
@@ -198,7 +221,7 @@ The health endpoint returns HTTP `503` and `database: "unavailable"` when Postgr
 
 ## Quality checks
 
-Run the complete Milestone 1 verification suite:
+Run the complete verification suite:
 
 ```bash
 npm run check
@@ -229,6 +252,15 @@ All API routes use the `/api/v1` prefix. Responses use a consistent JSON envelop
 
 Controllers remain thin, services contain business logic, and database access is isolated behind the Prisma client. Project-scoped authorization middleware and services will be introduced alongside the protected resources they govern.
 
+### Authentication endpoints
+
+| Method | Endpoint | Authentication | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/auth/register` | Public, rate limited | Create an account and authenticated session |
+| `POST` | `/api/v1/auth/login` | Public, rate limited | Authenticate with email and password |
+| `POST` | `/api/v1/auth/logout` | Cookie optional | Clear the current session cookie |
+| `GET` | `/api/v1/auth/me` | Required | Return the authenticated user |
+
 ## Security foundation
 
 - secrets and local environment files are Git-ignored
@@ -239,12 +271,18 @@ Controllers remain thin, services contain business logic, and database access is
 - Express implementation details are disabled
 - internal stack traces are not returned in production responses
 - Prisma uses parameterized database operations
+- passwords are hashed with bcrypt and never returned
+- signed authentication tokens are stored only in HTTP-only cookies
+- authentication cookies use SameSite protection and Secure in production
+- registration and login are rate limited
+- unsafe browser requests reject untrusted origins
+- invalid and expired authentication returns `401` and clears the cookie
 
-Authentication rate limiting, password hashing, secure cookies, CSRF controls, and project authorization belong to Milestone 2 and later protected-resource milestones.
+Project authorization is introduced alongside the protected project resources in Milestone 3.
 
 ## Deployment
 
-Deployment URLs will be added after the core application passes the security and QA milestone. No production deployment or demo credentials exist at Milestone 1.
+Deployment URLs will be added after the core application passes the security and QA milestone. No production deployment or demo credentials exist yet.
 
 ## CodeAlpha submission
 
