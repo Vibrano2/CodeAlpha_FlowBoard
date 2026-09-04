@@ -5,6 +5,7 @@ import { ContentError, ContentLoader } from "../components/content-state";
 import { ProjectNavigation } from "../components/project-navigation";
 import { TaskCard } from "../components/task-card";
 import { TaskForm } from "../components/task-form";
+import { useToast } from "../components/toast";
 import { WorkspaceShell } from "../components/workspace-shell";
 import { useProjectMembers } from "../hooks/use-members";
 import { useProject } from "../hooks/use-projects";
@@ -46,6 +47,7 @@ export const ProjectBoardPage = () => {
   const membersQuery = useProjectMembers(projectId);
   const createTask = useCreateTask();
   const updateStatus = useUpdateTaskStatus();
+  const { showToast } = useToast();
 
   const queries = [projectQuery, boardQuery, tasksQuery, membersQuery];
   const isLoading = queries.some((query) => query.isPending);
@@ -53,7 +55,10 @@ export const ProjectBoardPage = () => {
 
   const handleCreate = (input: CreateTaskInput | UpdateTaskInput) => {
     createTask.mutate({ projectId, input: input as CreateTaskInput }, {
-      onSuccess: () => setShowCreateTask(false),
+      onSuccess: (task) => {
+        showToast(`"${task.title}" was created.`);
+        setShowCreateTask(false);
+      },
     });
   };
 

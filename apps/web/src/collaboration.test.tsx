@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { ToastProvider } from "./components/toast";
 import { createAppQueryClient } from "./lib/query-client";
 import type { Activity, Comment } from "./types/collaboration";
 import type { Task } from "./types/task";
@@ -102,7 +103,7 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 const renderApp = (path: string) => render(
   <QueryClientProvider client={createAppQueryClient(true)}>
-    <MemoryRouter initialEntries={[path]}><App /></MemoryRouter>
+    <MemoryRouter initialEntries={[path]}><ToastProvider><App /></ToastProvider></MemoryRouter>
   </QueryClientProvider>,
 );
 

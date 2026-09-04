@@ -4,7 +4,7 @@ FlowBoard is a collaborative project management workspace for small teams. It is
 
 ## Project status
 
-Milestones 1 through 7 establish the technical foundation, secure authentication, project and member management, the task lifecycle, comments, activity history, task discovery, and in-app notifications. Responsive polish, final security QA, and real-time updates remain reserved for their specified milestones.
+Milestones 1 through 8 establish the technical foundation, secure authentication, project and member management, the task lifecycle, comments, activity history, task discovery, in-app notifications, and a polished, responsive, accessible user interface. Final security QA and real-time updates remain reserved for their specified milestones.
 
 | Milestone | Status |
 | --- | --- |
@@ -15,7 +15,7 @@ Milestones 1 through 7 establish the technical foundation, secure authentication
 | 5. Board and tasks | Complete |
 | 6. Comments and activity | Complete |
 | 7. Search and notifications | Complete |
-| 8. UI and responsive polish | Not started |
+| 8. UI and responsive polish | Complete |
 | 9. Security and QA | Not started |
 | 10. WebSockets bonus | Not started |
 
@@ -121,6 +121,15 @@ Milestones 1 through 7 establish the technical foundation, secure authentication
 - Ownership-scoped mark-one-read and mark-all-read endpoints
 - Responsive Notifications screen with read/unread text, related-resource navigation, and honest empty/error states
 - Unread notification badges in desktop and mobile navigation
+
+## Milestone 8 features
+
+- Tailwind CSS design tokens for the FlowBoard brand color, typography, and spacing scale
+- Responsive layouts validated at 375px, 768px, 1024px, and 1440px, including a collapsible mobile navigation bar and a fixed desktop sidebar
+- Consistent loading, error, and empty states across every page and data-driven section
+- Accessible forms with associated labels, `aria-live` error messaging, visible focus outlines, and keyboard-operable controls throughout
+- Toast notifications confirming successful project, task, and membership actions, alongside existing inline error feedback
+- Honest destructive-action confirmations for project, task, comment, and member removal
 
 ## Tech stack
 

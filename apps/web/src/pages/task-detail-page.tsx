@@ -6,6 +6,7 @@ import { ActivityList, ActivityLoader } from "../components/activity-list";
 import { ProjectNavigation } from "../components/project-navigation";
 import { TaskDiscussion } from "../components/task-discussion";
 import { TaskForm } from "../components/task-form";
+import { useToast } from "../components/toast";
 import { WorkspaceShell } from "../components/workspace-shell";
 import { useProjectMembers } from "../hooks/use-members";
 import { useProject } from "../hooks/use-projects";
@@ -31,6 +32,7 @@ export const TaskDetailPage = () => {
   const task = taskQuery.data;
   const due = task ? getDuePresentation(task) : null;
   const relatedDataIsLoading = Boolean(task) && (projectQuery.isPending || membersQuery.isPending);
+  const { showToast } = useToast();
 
   const handleUpdate = (input: CreateTaskInput | UpdateTaskInput) => {
     setSaved(false);
@@ -40,7 +42,10 @@ export const TaskDetailPage = () => {
   const handleDelete = () => {
     if (!task || !window.confirm(`Delete "${task.title}" permanently?`)) return;
     deleteTask.mutate({ taskId, projectId }, {
-      onSuccess: () => navigate(`/projects/${projectId}/board`, { replace: true }),
+      onSuccess: () => {
+        showToast(`"${task.title}" was deleted.`);
+        navigate(`/projects/${projectId}/board`, { replace: true });
+      },
     });
   };
 
