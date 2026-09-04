@@ -4,13 +4,13 @@ FlowBoard is a collaborative project management workspace for small teams. It is
 
 ## Project status
 
-Milestones 1 and 2 establish the technical foundation and secure user authentication. Projects, members, tasks, comments, activity, notifications, and real-time updates remain reserved for their specified milestones.
+Milestones 1 through 3 establish the technical foundation, secure user authentication, and project management. Member management, tasks, comments, activity screens, notifications, and real-time updates remain reserved for their specified milestones.
 
 | Milestone | Status |
 | --- | --- |
 | 1. Foundation | Complete |
 | 2. Authentication | Complete |
-| 3. Projects | Not started |
+| 3. Projects | Complete |
 | 4. Members | Not started |
 | 5. Board and tasks | Not started |
 | 6. Comments and activity | Not started |
@@ -50,6 +50,20 @@ Milestones 1 and 2 establish the technical foundation and secure user authentica
 - Authenticated user identity and logout in the application shell
 - Honest authenticated-dashboard empty states without fabricated statistics
 
+## Milestone 3 features
+
+- Project, project membership, board, and activity database entities
+- Project creation that atomically creates owner membership, the default board, and `PROJECT_CREATED` activity
+- Membership-scoped project listing and project detail access
+- Owner-only project editing and permanent deletion
+- Central project access checks that prevent inaccessible project ID disclosure
+- Cascading cleanup for project memberships, boards, and activity records
+- Real owned and shared project counts on the dashboard
+- Responsive project listing, creation, overview, and settings screens
+- Required confirmation before project deletion
+- Loading, empty, and error states for project data
+- Desktop and mobile project navigation
+
 ## Tech stack
 
 ### Frontend
@@ -85,7 +99,7 @@ Milestones 1 and 2 establish the technical foundation and secure user authentica
 CodeAlpha_FlowBoard/
 ├── apps/
 │   ├── api/
-│   │   ├── prisma/              # Prisma schema and future migrations
+│   │   ├── prisma/              # Prisma schema and versioned migrations
 │   │   └── src/
 │   │       ├── config/          # Validated runtime configuration
 │   │       ├── controllers/     # HTTP request handlers
@@ -250,7 +264,7 @@ All API routes use the `/api/v1` prefix. Responses use a consistent JSON envelop
 }
 ```
 
-Controllers remain thin, services contain business logic, and database access is isolated behind the Prisma client. Project-scoped authorization middleware and services will be introduced alongside the protected resources they govern.
+Controllers remain thin, services contain business logic, and database access is isolated behind the Prisma client. Reusable project access services enforce membership and owner rules before protected operations.
 
 ### Authentication endpoints
 
@@ -260,6 +274,16 @@ Controllers remain thin, services contain business logic, and database access is
 | `POST` | `/api/v1/auth/login` | Public, rate limited | Authenticate with email and password |
 | `POST` | `/api/v1/auth/logout` | Cookie optional | Clear the current session cookie |
 | `GET` | `/api/v1/auth/me` | Required | Return the authenticated user |
+
+### Project endpoints
+
+| Method | Endpoint | Authorization | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/projects` | Authenticated user | List projects where the user is a member |
+| `POST` | `/api/v1/projects` | Authenticated user | Create a project and become its owner |
+| `GET` | `/api/v1/projects/:projectId` | Project member | Return an accessible project |
+| `PATCH` | `/api/v1/projects/:projectId` | Project owner | Update project name or description |
+| `DELETE` | `/api/v1/projects/:projectId` | Project owner | Permanently delete the project |
 
 ## Security foundation
 
@@ -277,8 +301,9 @@ Controllers remain thin, services contain business logic, and database access is
 - registration and login are rate limited
 - unsafe browser requests reject untrusted origins
 - invalid and expired authentication returns `401` and clears the cookie
-
-Project authorization is introduced alongside the protected project resources in Milestone 3.
+- every project lookup is scoped through server-side membership checks
+- inaccessible project identifiers return `404` without revealing project existence
+- project settings and deletion require both owner membership and matching ownership
 
 ## Deployment
 

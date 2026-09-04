@@ -1,7 +1,11 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute, PublicOnlyRoute } from "./components/auth-guards";
 import { DashboardPage } from "./pages/dashboard-page";
+import { CreateProjectPage } from "./pages/create-project-page";
 import { LoginPage } from "./pages/login-page";
+import { ProjectOverviewPage } from "./pages/project-overview-page";
+import { ProjectSettingsPage } from "./pages/project-settings-page";
+import { ProjectsPage } from "./pages/projects-page";
 import { RegisterPage } from "./pages/register-page";
 
 export const App = () => (
@@ -12,6 +16,10 @@ export const App = () => (
     </Route>
     <Route element={<ProtectedRoute />}>
       <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/projects" element={<ProjectsPage />} />
+      <Route path="/projects/new" element={<CreateProjectPage />} />
+      <Route path="/projects/:projectId" element={<ProjectOverviewPage />} />
+      <Route path="/projects/:projectId/settings" element={<ProjectSettingsPage />} />
     </Route>
     <Route path="/" element={<Navigate replace to="/dashboard" />} />
     <Route path="*" element={<Navigate replace to="/dashboard" />} />

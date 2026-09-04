@@ -1,8 +1,9 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { createAppQueryClient } from "./lib/query-client";
 
 const user = {
   id: "708fe7a5-4696-43b4-bdf1-4ef5e19f845a",
@@ -26,9 +27,7 @@ const unauthenticatedResponse = () =>
   );
 
 const renderApp = (initialPath: string) => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
+  const queryClient = createAppQueryClient(true);
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -51,6 +50,9 @@ describe("FlowBoard authentication flow", () => {
         if (String(input).endsWith("/auth/me")) {
           return Promise.resolve(jsonResponse({ success: true, data: { user } }));
         }
+        if (String(input).endsWith("/projects")) {
+          return Promise.resolve(jsonResponse({ success: true, data: { projects: [] } }));
+        }
 
         return Promise.resolve(jsonResponse({
           success: true,
@@ -62,7 +64,7 @@ describe("FlowBoard authentication flow", () => {
     renderApp("/dashboard");
     expect(await screen.findByRole("heading", { name: "Welcome, Victor" })).toBeVisible();
     expect(screen.getByText("victor@example.com")).toBeVisible();
-    expect(screen.getByText("No projects yet")).toBeVisible();
+    expect(await screen.findByText("No projects yet")).toBeVisible();
     expect(await screen.findByText("API and database connected")).toBeVisible();
   });
 
@@ -71,6 +73,7 @@ describe("FlowBoard authentication flow", () => {
       const url = String(input);
       if (url.endsWith("/auth/me")) return Promise.resolve(unauthenticatedResponse());
       if (url.endsWith("/auth/login")) return Promise.resolve(jsonResponse({ success: true, data: { user } }));
+      if (url.endsWith("/projects")) return Promise.resolve(jsonResponse({ success: true, data: { projects: [] } }));
 
       return Promise.resolve(jsonResponse({
         success: true,
@@ -113,6 +116,7 @@ describe("FlowBoard authentication flow", () => {
       const url = String(input);
       if (url.endsWith("/auth/me")) return Promise.resolve(jsonResponse({ success: true, data: { user } }));
       if (url.endsWith("/auth/logout")) return Promise.resolve(jsonResponse({ success: true, data: { message: "Logged out successfully." } }));
+      if (url.endsWith("/projects")) return Promise.resolve(jsonResponse({ success: true, data: { projects: [] } }));
       return Promise.resolve(jsonResponse({ success: false }, 503));
     });
     vi.stubGlobal("fetch", fetchMock);

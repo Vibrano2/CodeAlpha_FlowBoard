@@ -21,7 +21,7 @@ interface NavigationItem {
 const navigation: NavigationItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { label: "My Tasks", icon: CheckSquare2 },
-  { label: "Projects", icon: FolderKanban },
+  { label: "Projects", icon: FolderKanban, path: "/projects" },
   { label: "Notifications", icon: Bell },
 ];
 
@@ -96,6 +96,15 @@ export const AppShell = ({ children, user, onLogout, isLoggingOut }: AppShellPro
             </button>
           </div>
         </div>
+        <nav className="border-t border-slate-100 px-4 sm:px-6" aria-label="Mobile navigation">
+          <ul className="flex gap-5">
+            {navigation.filter((item) => item.path).map(({ label, path }) => (
+              <li key={label}>
+                <NavLink className={({ isActive }) => `block border-b-2 py-2.5 text-xs font-semibold ${isActive ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500"}`} to={path!}>{label}</NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </header>
 
       <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 sm:py-9 lg:px-10 lg:py-10">
