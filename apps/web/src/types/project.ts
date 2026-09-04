@@ -31,3 +31,14 @@ export interface ProjectInput {
   name: string;
   description?: string | null;
 }
+
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: ProjectRole;
+  joinedAt: string;
+  user: ProjectOwner;
+}
+
+export type UserSearchResult = ProjectOwner;

@@ -4,14 +4,14 @@ FlowBoard is a collaborative project management workspace for small teams. It is
 
 ## Project status
 
-Milestones 1 through 3 establish the technical foundation, secure user authentication, and project management. Member management, tasks, comments, activity screens, notifications, and real-time updates remain reserved for their specified milestones.
+Milestones 1 through 4 establish the technical foundation, secure authentication, project management, and team membership. Tasks, comments, activity screens, notifications, and real-time updates remain reserved for their specified milestones.
 
 | Milestone | Status |
 | --- | --- |
 | 1. Foundation | Complete |
 | 2. Authentication | Complete |
 | 3. Projects | Complete |
-| 4. Members | Not started |
+| 4. Members | Complete |
 | 5. Board and tasks | Not started |
 | 6. Comments and activity | Not started |
 | 7. Search and notifications | Not started |
@@ -63,6 +63,20 @@ Milestones 1 through 3 establish the technical foundation, secure user authentic
 - Required confirmation before project deletion
 - Loading, empty, and error states for project data
 - Desktop and mobile project navigation
+
+## Milestone 4 features
+
+- Authenticated registered-user search by email with safe, limited output
+- Project member listing for owners and members
+- Owner-only member addition and removal enforced by the API
+- Duplicate membership and nonexistent-user rejection
+- Project owner self-removal protection
+- Atomic `MEMBER_ADDED` and `MEMBER_REMOVED` activity recording
+- Immediate project access revocation after membership removal
+- Responsive Members screen with textual owner/member roles
+- Owner-aware user search and add controls
+- Removal confirmation and member-list refresh
+- Read-only member experience for non-owners
 
 ## Tech stack
 
@@ -285,6 +299,15 @@ Controllers remain thin, services contain business logic, and database access is
 | `PATCH` | `/api/v1/projects/:projectId` | Project owner | Update project name or description |
 | `DELETE` | `/api/v1/projects/:projectId` | Project owner | Permanently delete the project |
 
+### User and member endpoints
+
+| Method | Endpoint | Authorization | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/users/search?email=` | Authenticated user | Search registered users by email |
+| `GET` | `/api/v1/projects/:projectId/members` | Project member | List project members |
+| `POST` | `/api/v1/projects/:projectId/members` | Project owner | Add a registered user as a member |
+| `DELETE` | `/api/v1/projects/:projectId/members/:userId` | Project owner | Remove a project member |
+
 ## Security foundation
 
 - secrets and local environment files are Git-ignored
@@ -304,6 +327,9 @@ Controllers remain thin, services contain business logic, and database access is
 - every project lookup is scoped through server-side membership checks
 - inaccessible project identifiers return `404` without revealing project existence
 - project settings and deletion require both owner membership and matching ownership
+- member changes repeat owner authorization on the server
+- duplicate memberships and owner removal are rejected
+- user search never returns password hashes or authentication data
 
 ## Deployment
 
