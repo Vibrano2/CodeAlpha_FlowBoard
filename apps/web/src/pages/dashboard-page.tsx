@@ -5,9 +5,11 @@ import { HealthCard } from "../components/health-card";
 import { ProjectCard } from "../components/project-card";
 import { WorkspaceShell } from "../components/workspace-shell";
 import { useProjects } from "../hooks/use-projects";
+import { useAssignedTasks } from "../hooks/use-tasks";
 
 export const DashboardPage = () => {
   const projectsQuery = useProjects();
+  const assignedTasksQuery = useAssignedTasks();
 
   return (
     <WorkspaceShell>
@@ -15,6 +17,14 @@ export const DashboardPage = () => {
         const projects = projectsQuery.data ?? [];
         const ownedCount = projects.filter((project) => project.currentUserRole === "OWNER").length;
         const sharedCount = projects.length - ownedCount;
+        const activeAssignedTasks = (assignedTasksQuery.data ?? []).filter((task) => task.status !== "COMPLETED");
+        const now = Date.now();
+        const upcomingCount = activeAssignedTasks.filter((task) => {
+          if (!task.dueDate) return false;
+          const due = new Date(task.dueDate).getTime();
+          return due >= now && due <= now + 7 * 24 * 60 * 60 * 1000;
+        }).length;
+        const overdueCount = activeAssignedTasks.filter((task) => task.dueDate && new Date(task.dueDate).getTime() < now).length;
 
         return (
           <>
@@ -32,8 +42,8 @@ export const DashboardPage = () => {
             <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               <DashboardStat icon={FolderKanban} label="Projects I own" value={projectsQuery.isSuccess ? String(ownedCount) : "..."} />
               <DashboardStat icon={UsersRound} label="Shared with me" value={projectsQuery.isSuccess ? String(sharedCount) : "..."} />
-              <DashboardStat icon={CheckSquare2} label="Tasks assigned to me" value="Available in Milestone 5" />
-              <DashboardStat icon={CalendarClock} label="Upcoming due dates" value="Available in Milestone 5" />
+              <DashboardStat icon={CheckSquare2} label="Tasks assigned to me" value={assignedTasksQuery.isError ? "Unavailable" : assignedTasksQuery.isSuccess ? String(activeAssignedTasks.length) : "..."} />
+              <DashboardStat icon={CalendarClock} label="Upcoming due dates" value={assignedTasksQuery.isError ? "Unavailable" : assignedTasksQuery.isSuccess ? String(upcomingCount) : "..."} note={assignedTasksQuery.isSuccess && overdueCount > 0 ? `${overdueCount} overdue` : undefined} />
             </div>
 
             <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.65fr)]">
@@ -59,11 +69,12 @@ export const DashboardPage = () => {
   );
 };
 
-const DashboardStat = ({ icon: Icon, label, value }: { icon: typeof FolderKanban; label: string; value: string }) => (
+const DashboardStat = ({ icon: Icon, label, value, note }: { icon: typeof FolderKanban; label: string; value: string; note?: string }) => (
   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
     <span className="grid size-10 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon aria-hidden="true" size={20} /></span>
     <h2 className="mt-4 text-sm font-semibold text-slate-500">{label}</h2>
     <p className={`mt-1 font-bold text-slate-950 ${/^\d+$/.test(value) ? "text-2xl" : "text-sm"}`}>{value}</p>
+    {note ? <p className="mt-1 text-xs font-bold text-red-700">{note}</p> : null}
   </section>
 );
 

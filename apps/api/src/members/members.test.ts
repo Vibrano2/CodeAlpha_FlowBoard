@@ -15,6 +15,7 @@ const databaseMocks = vi.hoisted(() => ({
   membershipFindMany: vi.fn(),
   membershipCreate: vi.fn(),
   membershipDelete: vi.fn(),
+  taskUpdateMany: vi.fn(),
   activityCreate: vi.fn(),
   transaction: vi.fn(),
   queryRaw: vi.fn().mockResolvedValue([{ result: 1 }]),
@@ -34,6 +35,7 @@ vi.mock("../database/prisma.js", () => ({
       create: databaseMocks.membershipCreate,
       delete: databaseMocks.membershipDelete,
     },
+    task: { updateMany: databaseMocks.taskUpdateMany },
     activityLog: { create: databaseMocks.activityCreate },
   },
 }));
@@ -92,6 +94,7 @@ describe("user search and project member API", () => {
     databaseMocks.userFindMany.mockResolvedValue([]);
     databaseMocks.membershipCreate.mockResolvedValue(membership);
     databaseMocks.membershipDelete.mockResolvedValue(membership);
+    databaseMocks.taskUpdateMany.mockResolvedValue({ count: 0 });
     databaseMocks.activityCreate.mockResolvedValue({ id: "activity-id" });
     databaseMocks.transaction.mockImplementation(async (operations: unknown[]) => Promise.all(operations));
   });
@@ -253,6 +256,10 @@ describe("user search and project member API", () => {
     expect(removal.status).toBe(200);
     expect(databaseMocks.membershipDelete).toHaveBeenCalledWith({
       where: { projectId_userId: { projectId, userId: memberId } },
+    });
+    expect(databaseMocks.taskUpdateMany).toHaveBeenCalledWith({
+      where: { projectId, assigneeId: memberId },
+      data: { assigneeId: null },
     });
     expect(databaseMocks.activityCreate).toHaveBeenCalledWith({
       data: {

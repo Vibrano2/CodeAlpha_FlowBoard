@@ -20,7 +20,7 @@ interface NavigationItem {
 
 const navigation: NavigationItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { label: "My Tasks", icon: CheckSquare2 },
+  { label: "My Tasks", icon: CheckSquare2, path: "/tasks" },
   { label: "Projects", icon: FolderKanban, path: "/projects" },
   { label: "Notifications", icon: Bell },
 ];

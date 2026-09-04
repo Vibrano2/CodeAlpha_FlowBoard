@@ -8,16 +8,18 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String   @db.VarChar(100)
-  email        String   @unique @db.VarChar(254)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  avatarUrl    String?  @map("avatar_url") @db.VarChar(2048)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                 String          @id @default(uuid()) @db.Uuid
+  name               String          @db.VarChar(100)
+  email              String          @unique @db.VarChar(254)
+  passwordHash       String          @map("password_hash") @db.VarChar(255)
+  avatarUrl          String?         @map("avatar_url") @db.VarChar(2048)
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
   ownedProjects      Project[]       @relation("ProjectOwner")
   projectMemberships ProjectMember[]
   projectActivities  ActivityLog[]   @relation("ActivityActor")
+  createdTasks       Task[]          @relation("TaskCreator")
+  assignedTasks      Task[]          @relation("TaskAssignee")
 
   @@map("users")
 }
@@ -48,6 +50,7 @@ model Project {
   owner       User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   members     ProjectMember[]
   board       Board?
+  tasks       Task[]
   activities  ActivityLog[]
 
   @@index([ownerId])
@@ -76,8 +79,53 @@ model Board {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
 
   @@map("boards")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id          String        @id @default(uuid()) @db.Uuid
+  projectId   String        @map("project_id") @db.Uuid
+  boardId     String        @map("board_id") @db.Uuid
+  title       String        @db.VarChar(200)
+  description String?       @db.VarChar(5000)
+  status      TaskStatus    @default(TODO)
+  priority    TaskPriority  @default(MEDIUM)
+  assigneeId  String?       @map("assignee_id") @db.Uuid
+  createdBy   String        @map("created_by") @db.Uuid
+  dueDate     DateTime?     @map("due_date")
+  position    Int           @default(0)
+  completedAt DateTime?     @map("completed_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  board       Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  assignee    User?         @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  creator     User          @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  activities  ActivityLog[]
+
+  @@index([projectId])
+  @@index([boardId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([projectId, status])
+  @@map("tasks")
 }
 
 model ActivityLog {
@@ -90,6 +138,7 @@ model ActivityLog {
   createdAt DateTime       @default(now()) @map("created_at")
   project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   actor     User           @relation("ActivityActor", fields: [actorId], references: [id], onDelete: Restrict)
+  task      Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
 
   @@index([projectId])
   @@index([taskId])

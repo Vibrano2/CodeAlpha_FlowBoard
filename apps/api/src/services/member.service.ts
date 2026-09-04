@@ -97,6 +97,10 @@ export const removeProjectMember = async (
 
   try {
     await prisma.$transaction([
+      prisma.task.updateMany({
+        where: { projectId, assigneeId: userId },
+        data: { assigneeId: null },
+      }),
       prisma.projectMember.delete({
         where: { projectId_userId: { projectId, userId } },
       }),

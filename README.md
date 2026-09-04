@@ -4,7 +4,7 @@ FlowBoard is a collaborative project management workspace for small teams. It is
 
 ## Project status
 
-Milestones 1 through 4 establish the technical foundation, secure authentication, project management, and team membership. Tasks, comments, activity screens, notifications, and real-time updates remain reserved for their specified milestones.
+Milestones 1 through 5 establish the technical foundation, secure authentication, project and member management, and the complete task lifecycle. Comments, activity screens, notifications, and real-time updates remain reserved for their specified milestones.
 
 | Milestone | Status |
 | --- | --- |
@@ -12,7 +12,7 @@ Milestones 1 through 4 establish the technical foundation, secure authentication
 | 2. Authentication | Complete |
 | 3. Projects | Complete |
 | 4. Members | Complete |
-| 5. Board and tasks | Not started |
+| 5. Board and tasks | Complete |
 | 6. Comments and activity | Not started |
 | 7. Search and notifications | Not started |
 | 8. UI and responsive polish | Not started |
@@ -77,6 +77,22 @@ Milestones 1 through 4 establish the technical foundation, secure authentication
 - Owner-aware user search and add controls
 - Removal confirmation and member-list refresh
 - Read-only member experience for non-owners
+
+## Milestone 5 features
+
+- PostgreSQL task model with UUID identifiers, workflow enums, relationships, and query indexes
+- One main Kanban board per project with To Do, In Progress, Review, and Completed columns
+- Membership-authorized board and task APIs with task-level IDOR protection
+- Task creation, detail, editing, deletion, assignment, priority, and due dates
+- Assignee validation that rejects users outside the project
+- Atomic task creation and update activity records
+- `completedAt` handling when tasks enter or leave Completed
+- Automatic unassignment of a removed member's project tasks
+- Always-available status selectors for keyboard, touch, and mobile use
+- Compact task cards with textual priority, assignee, due-soon, and overdue indicators
+- Full-page responsive task detail and editing experience
+- Assigned-task dashboard statistics and a cross-project My Tasks screen
+- Loading, empty, error, and destructive-action confirmation states
 
 ## Tech stack
 
@@ -207,7 +223,7 @@ npm run db:migrate
 npm run db:check
 ```
 
-The migration creates the Milestone 2 `users` table. Future domain models are added only with their implementation milestones.
+The versioned migrations create the user, project, membership, board, task, and activity tables required through Milestone 5.
 
 ## Running FlowBoard
 
@@ -308,6 +324,20 @@ Controllers remain thin, services contain business logic, and database access is
 | `POST` | `/api/v1/projects/:projectId/members` | Project owner | Add a registered user as a member |
 | `DELETE` | `/api/v1/projects/:projectId/members/:userId` | Project owner | Remove a project member |
 
+### Board and task endpoints
+
+| Method | Endpoint | Authorization | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/projects/:projectId/board` | Project member | Return the project's main board |
+| `GET` | `/api/v1/projects/:projectId/tasks` | Project member | List project tasks |
+| `POST` | `/api/v1/projects/:projectId/tasks` | Project member | Create a task on the project board |
+| `GET` | `/api/v1/tasks` | Authenticated user | List tasks assigned to the current user in accessible projects |
+| `GET` | `/api/v1/tasks/:taskId` | Project member | Return an accessible task |
+| `PATCH` | `/api/v1/tasks/:taskId` | Project member | Update task fields through shared service logic |
+| `DELETE` | `/api/v1/tasks/:taskId` | Project member | Delete a task |
+| `PATCH` | `/api/v1/tasks/:taskId/status` | Project member | Change task status |
+| `PATCH` | `/api/v1/tasks/:taskId/assignee` | Project member | Assign or unassign a project member |
+
 ## Security foundation
 
 - secrets and local environment files are Git-ignored
@@ -330,6 +360,9 @@ Controllers remain thin, services contain business logic, and database access is
 - member changes repeat owner authorization on the server
 - duplicate memberships and owner removal are rejected
 - user search never returns password hashes or authentication data
+- task access is derived from the stored task project, never a client-supplied project ID
+- task assignees must have a current membership in the same project
+- member removal unassigns affected project tasks before revoking access
 
 ## Deployment
 

@@ -34,9 +34,10 @@ export const ProjectOverviewPage = () => {
                   <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">Workspace</p>
                   <div className="mt-5 flex items-start gap-4 rounded-2xl border border-brand-100 bg-brand-50 p-5">
                     <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white text-brand-700 shadow-sm"><Columns3 aria-hidden="true" size={22} /></span>
-                    <div>
+                    <div className="flex-1">
                       <h2 className="font-bold text-slate-950">{projectQuery.data.board?.name ?? "Project Board"}</h2>
-                      <p className="mt-1 text-sm leading-6 text-slate-600">Your Kanban columns and task cards will become available in Milestone 5.</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">Organize tasks across To Do, In Progress, Review, and Completed.</p>
+                      <Link className="mt-3 inline-flex text-sm font-semibold text-brand-700 hover:text-brand-800" to={`/projects/${projectId}/board`}>Open board</Link>
                     </div>
                   </div>
                 </section>
