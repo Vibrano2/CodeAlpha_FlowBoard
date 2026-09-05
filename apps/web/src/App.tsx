@@ -15,6 +15,7 @@ import { ProjectActivityPage } from "./pages/project-activity-page";
 import { NotificationsPage } from "./pages/notifications-page";
 import { ProfilePage } from "./pages/profile-page";
 import { ToastProvider } from "./components/toast";
+import { ProjectRealtimeBoundary } from "./components/project-realtime-boundary";
 
 export const App = () => (
   <ToastProvider>
@@ -30,11 +31,13 @@ export const App = () => (
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/projects/new" element={<CreateProjectPage />} />
-        <Route path="/projects/:projectId" element={<ProjectOverviewPage />} />
-        <Route path="/projects/:projectId/board" element={<ProjectBoardPage />} />
-        <Route path="/projects/:projectId/members" element={<ProjectMembersPage />} />
-        <Route path="/projects/:projectId/activity" element={<ProjectActivityPage />} />
-        <Route path="/projects/:projectId/settings" element={<ProjectSettingsPage />} />
+        <Route path="/projects/:projectId" element={<ProjectRealtimeBoundary />}>
+          <Route index element={<ProjectOverviewPage />} />
+          <Route path="board" element={<ProjectBoardPage />} />
+          <Route path="members" element={<ProjectMembersPage />} />
+          <Route path="activity" element={<ProjectActivityPage />} />
+          <Route path="settings" element={<ProjectSettingsPage />} />
+        </Route>
         <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
       </Route>
       <Route path="/" element={<Navigate replace to="/dashboard" />} />

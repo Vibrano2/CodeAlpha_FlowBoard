@@ -1,6 +1,7 @@
 import { ActivityAction, NotificationType, Prisma, TaskStatus } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../database/prisma.js";
+import { publishRealtimeEvent } from "../realtime/realtime-events.js";
 import { AppError } from "../utils/app-error.js";
 import type {
   CreateTaskInput,
@@ -156,7 +157,7 @@ export const createProjectTask = async (
 
   const taskId = randomUUID();
 
-  return prisma.$transaction(async (transaction) => {
+  const task = await prisma.$transaction(async (transaction) => {
     const latestPosition = await transaction.task.aggregate({
       where: { projectId, status: TaskStatus.TODO },
       _max: { position: true },
@@ -215,6 +216,13 @@ export const createProjectTask = async (
 
     return task;
   });
+
+  publishRealtimeEvent({ type: "task:created", projectId, taskId: task.id });
+  if (input.assigneeId && input.assigneeId !== actorId) {
+    publishRealtimeEvent({ type: "notification:changed", userIds: [input.assigneeId] });
+  }
+
+  return task;
 };
 
 export const getTaskById = (taskId: string, actorId: string) =>
@@ -236,7 +244,7 @@ export const updateTaskById = async (
     input.assigneeId !== undefined && input.assigneeId !== existingTask.assigneeId;
 
   try {
-    return await prisma.$transaction(async (transaction) => {
+    const updatedTask = await prisma.$transaction(async (transaction) => {
       let destinationPosition = existingTask.position;
 
       if (statusChanged) {
@@ -339,16 +347,36 @@ export const updateTaskById = async (
 
       return updatedTask;
     });
+
+    publishRealtimeEvent({
+      type: "task:updated",
+      projectId: existingTask.projectId,
+      taskId,
+    });
+
+    const notificationUserIds = [
+      ...(statusChanged ? [updatedTask.assigneeId, updatedTask.createdBy] : []),
+      ...(assigneeChanged ? [input.assigneeId] : []),
+    ].filter(
+      (userId, index, values): userId is string =>
+        Boolean(userId) && userId !== actorId && values.indexOf(userId) === index,
+    );
+    if (notificationUserIds.length > 0) {
+      publishRealtimeEvent({ type: "notification:changed", userIds: notificationUserIds });
+    }
+
+    return updatedTask;
   } catch (error) {
     return mapMissingTask(error);
   }
 };
 
 export const deleteTaskById = async (taskId: string, actorId: string) => {
-  await loadAuthorizedTask(taskId, actorId);
+  const task = await loadAuthorizedTask(taskId, actorId);
 
   try {
     await prisma.task.delete({ where: { id: taskId } });
+    publishRealtimeEvent({ type: "task:deleted", projectId: task.projectId, taskId });
   } catch (error) {
     mapMissingTask(error);
   }

@@ -13,6 +13,7 @@ import { useProjectMembers } from "../hooks/use-members";
 import { useProject } from "../hooks/use-projects";
 import { useDeleteTask, useTask, useUpdateTask } from "../hooks/use-tasks";
 import { useProjectActivity } from "../hooks/use-collaboration";
+import { useProjectRealtime } from "../hooks/use-realtime";
 import { getDuePresentation, priorityClasses, priorityLabels } from "../lib/task-display";
 import type { CreateTaskInput, UpdateTaskInput } from "../types/task";
 
@@ -27,6 +28,7 @@ export const TaskDetailPage = () => {
   const { showToast } = useToast();
   const taskQuery = useTask(taskId);
   const projectId = taskQuery.data?.projectId ?? "";
+  useProjectRealtime(projectId);
   const projectQuery = useProject(projectId);
   const membersQuery = useProjectMembers(projectId);
   const updateTask = useUpdateTask();

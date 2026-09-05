@@ -50,6 +50,10 @@ vi.mock("../database/prisma.js", () => ({
 }));
 
 import { createApp } from "../app.js";
+import {
+  type RealtimeDomainEvent,
+  subscribeToRealtimeEvents,
+} from "../realtime/realtime-events.js";
 
 const actor = {
   id: actorId,
@@ -249,6 +253,8 @@ describe("board and task API", () => {
   });
 
   it("creates a task with default workflow values and server-generated activity", async () => {
+    const realtimeEvents: RealtimeDomainEvent[] = [];
+    const unsubscribe = subscribeToRealtimeEvents((event) => realtimeEvents.push(event));
     const assignedTask = { ...task, assigneeId, assignee };
     databaseMocks.membershipFindUnique
       .mockResolvedValueOnce(memberAccess)
@@ -265,6 +271,7 @@ describe("board and task API", () => {
         assigneeId,
         dueDate: "2026-09-10T23:59:59.999Z",
       });
+    unsubscribe();
 
     expect(response.status).toBe(201);
     expect(response.body.data.task.assigneeId).toBe(assigneeId);
@@ -298,6 +305,10 @@ describe("board and task API", () => {
         taskId: expect.any(String),
       },
     });
+    expect(realtimeEvents).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "task:created", projectId }),
+      { type: "notification:changed", userIds: [assigneeId] },
+    ]));
   });
 
   it("does not notify a user about their own task assignment", async () => {

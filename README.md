@@ -1,10 +1,10 @@
 # FlowBoard
 
-FlowBoard is a collaborative project management workspace for small teams. It is being built for **CodeAlpha Full Stack Development Task 3** and will let teams organize projects, assign work, track task progress, and communicate around individual tasks.
+FlowBoard is a collaborative project management workspace for small teams, built for **CodeAlpha Full Stack Development Task 3**. Teams can organize projects, assign work, track task progress, and communicate around individual tasks.
 
 ## Project status
 
-Milestones 1 through 9 establish the complete REST application, polished responsive interface, and final security safeguards. Only the optional real-time WebSocket bonus remains.
+Milestones 1 through 10 are complete. FlowBoard now includes the full REST application, polished responsive interface, final security safeguards, and authenticated real-time collaboration.
 
 | Milestone | Status |
 | --- | --- |
@@ -17,7 +17,7 @@ Milestones 1 through 9 establish the complete REST application, polished respons
 | 7. Search and notifications | Complete |
 | 8. UI and responsive polish | Complete |
 | 9. Security and QA | Complete |
-| 10. WebSockets bonus | Not started |
+| 10. WebSockets bonus | Complete |
 
 ## Milestone 1 features
 
@@ -149,6 +149,20 @@ Milestones 1 through 9 establish the complete REST application, polished respons
 - Automated regression coverage for headers, malformed input, oversized input, cross-site requests, and mass-assignment attempts
 - Dependency audit with zero known production vulnerabilities
 
+## Milestone 10 features
+
+- Socket.io server attached to the existing Express HTTP server
+- WebSocket authentication through the existing signed HTTP-only session cookie
+- Server-authorized project-room joins backed by current database membership
+- Immediate room eviction and client redirection when project membership is removed
+- Live task creation, editing, status movement, assignment, and deletion refreshes
+- Live comment creation, editing, and deletion refreshes
+- Live notification and unread-count refreshes across authenticated browser sessions
+- Automatic project-room rejoin after Socket.io reconnection
+- Minimal identifier-only events that trigger REST cache invalidation instead of replacing REST as the source of truth
+- Socket origin allowlisting and a bounded 10 KB inbound event payload
+- Integration tests for unauthenticated connections, untrusted origins, outsider room access, authorized broadcasts, and member eviction
+
 ## Tech stack
 
 ### Frontend
@@ -159,6 +173,7 @@ Milestones 1 through 9 establish the complete REST application, polished respons
 - Tailwind CSS 4
 - React Router 7
 - TanStack Query 5
+- Socket.io Client 4
 
 ### Backend
 
@@ -170,6 +185,7 @@ Milestones 1 through 9 establish the complete REST application, polished respons
 - Zod
 - bcrypt
 - JSON Web Tokens in HTTP-only cookies
+- Socket.io 4
 
 ### Quality
 
@@ -251,6 +267,7 @@ Environment files are ignored by Git. Never commit real credentials or secrets.
 | Variable | Required | Example | Purpose |
 | --- | --- | --- | --- |
 | `VITE_API_URL` | Yes | `http://localhost:4000/api/v1` | Versioned REST API base URL |
+| `VITE_SOCKET_URL` | No | `http://localhost:4000` | Socket.io server origin; defaults to the API origin |
 
 Only variables beginning with `VITE_` are exposed to browser code. Never put secrets in the web environment file.
 
@@ -301,6 +318,7 @@ Local services:
 - Web application: `http://localhost:5173`
 - REST API: `http://localhost:4000/api/v1`
 - Health endpoint: `http://localhost:4000/api/v1/health`
+- Socket.io endpoint: served by the API origin
 
 Example health response:
 
@@ -415,6 +433,18 @@ Controllers remain thin, services contain business logic, and database access is
 | `PATCH` | `/api/v1/notifications/:notificationId/read` | Notification owner | Mark one owned notification as read |
 | `PATCH` | `/api/v1/notifications/read-all` | Authenticated user | Mark all current-user notifications as read |
 
+### Real-time events
+
+The browser authenticates Socket.io using the same HTTP-only session cookie as REST. Clients request a project join with a project UUID, and the server derives the room name only after confirming current project membership.
+
+Server events use minimal identifiers and tell TanStack Query to refetch authoritative REST data:
+
+- `task:created`, `task:updated`, `task:deleted`
+- `comment:created`, `comment:updated`, `comment:deleted`
+- `notification:changed`
+- `project:members-changed`
+- `project:access-revoked`
+
 ## Security foundation
 
 - secrets and local environment files are Git-ignored
@@ -452,6 +482,11 @@ Controllers remain thin, services contain business logic, and database access is
 - API responses use `Cache-Control: no-store`
 - production deployments can explicitly configure trusted reverse-proxy hops
 - server timeouts bound slow or incomplete HTTP requests
+- Socket.io authenticates the signed session before accepting a connection
+- project rooms can only be joined after a fresh database membership check
+- removed members are evicted from project rooms immediately
+- browser socket origins are restricted to configured client origins
+- inbound Socket.io event payloads are limited to 10 KB
 
 ## Deployment
 

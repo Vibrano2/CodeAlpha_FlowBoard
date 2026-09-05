@@ -1,6 +1,7 @@
 import { ActivityAction, NotificationType, Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../database/prisma.js";
+import { publishRealtimeEvent } from "../realtime/realtime-events.js";
 import { AppError } from "../utils/app-error.js";
 import type {
   CreateCommentInput,
@@ -94,7 +95,7 @@ export const createTaskComment = async (
   const task = await loadAuthorizedTask(taskId, actorId);
   const commentId = randomUUID();
 
-  return prisma.$transaction(async (transaction) => {
+  const comment = await prisma.$transaction(async (transaction) => {
     const comment = await transaction.comment.create({
       data: {
         id: commentId,
@@ -135,6 +136,22 @@ export const createTaskComment = async (
 
     return comment;
   });
+
+  publishRealtimeEvent({
+    type: "comment:created",
+    projectId: task.projectId,
+    taskId,
+    commentId: comment.id,
+  });
+  const notificationUserIds = [task.assigneeId, task.createdBy].filter(
+    (userId, index, values): userId is string =>
+      Boolean(userId) && userId !== actorId && values.indexOf(userId) === index,
+  );
+  if (notificationUserIds.length > 0) {
+    publishRealtimeEvent({ type: "notification:changed", userIds: notificationUserIds });
+  }
+
+  return comment;
 };
 
 export const updateCommentById = async (
@@ -142,24 +159,37 @@ export const updateCommentById = async (
   actorId: string,
   input: UpdateCommentInput,
 ) => {
-  await loadAuthorizedComment(commentId, actorId);
+  const existingComment = await loadAuthorizedComment(commentId, actorId);
 
   try {
-    return await prisma.comment.update({
+    const comment = await prisma.comment.update({
       where: { id: commentId },
       data: { content: input.content },
       select: commentSelect,
     });
+    publishRealtimeEvent({
+      type: "comment:updated",
+      projectId: existingComment.task.projectId,
+      taskId: existingComment.taskId,
+      commentId,
+    });
+    return comment;
   } catch (error) {
     return mapMissingComment(error);
   }
 };
 
 export const deleteCommentById = async (commentId: string, actorId: string) => {
-  await loadAuthorizedComment(commentId, actorId);
+  const comment = await loadAuthorizedComment(commentId, actorId);
 
   try {
     await prisma.comment.delete({ where: { id: commentId } });
+    publishRealtimeEvent({
+      type: "comment:deleted",
+      projectId: comment.task.projectId,
+      taskId: comment.taskId,
+      commentId,
+    });
   } catch (error) {
     mapMissingComment(error);
   }
