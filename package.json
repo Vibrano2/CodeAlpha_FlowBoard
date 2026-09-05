@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "oxlint": "^1.79.0"
+    "oxlint": "^1.79.0",
+    "supabase": "2.116.0"
   }
 }
