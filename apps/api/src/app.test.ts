@@ -70,7 +70,16 @@ describe("FlowBoard API", () => {
     expect(response.body.error.code).toBe("PAYLOAD_TOO_LARGE");
   });
 
-  it("rejects non-JSON bodies and cross-site unsafe requests", async () => {
+  it("allows cross-site unsafe requests from an explicitly trusted origin", async () => {
+    const response = await request(createApp())
+      .post("/api/v1/auth/logout")
+      .set("Origin", "http://localhost:5173")
+      .set("Sec-Fetch-Site", "cross-site");
+
+    expect(response.status).toBe(200);
+  });
+
+  it("rejects non-JSON bodies and untrusted cross-site unsafe requests", async () => {
     const wrongType = await request(createApp())
       .post("/api/v1/auth/login")
       .set("Origin", "http://localhost:5173")
