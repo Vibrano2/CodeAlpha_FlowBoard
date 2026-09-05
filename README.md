@@ -204,6 +204,61 @@ cp apps/web/.env.example apps/web/.env
 
 Environment files are ignored by Git. Never commit real credentials or secrets.
 
+## Production deployment
+
+The repository includes deployment manifests for a Node-compatible API host and
+Vercel:
+
+- `render.yaml` provisions the Express API as a Render web service. It builds
+  the API, applies committed Prisma migrations at startup, and exposes
+  `/api/v1/health` as the health check.
+- `vercel.json` builds the Vite frontend from the workspace root and rewrites
+  client-side routes to `index.html`.
+
+### API deployment
+
+Create the API service from `render.yaml` (or configure an equivalent Node
+service) and set these secrets in the host dashboard:
+
+| Variable | Production value |
+| --- | --- |
+| `DATABASE_URL` | Supabase pooled PostgreSQL connection string |
+| `CLIENT_ORIGIN` | The exact Vercel deployment origin, without a trailing slash |
+| `JWT_SECRET` | A randomly generated value with at least 32 characters |
+
+`PORT`, `NODE_ENV`, `AUTH_COOKIE_NAME`, and `AUTH_TOKEN_TTL` are supplied by the
+manifest. Do not put Supabase credentials or JWT secrets in GitHub, Vercel
+source files, or committed `.env` files.
+
+After the first deployment, verify:
+
+```bash
+curl -fsS https://<api-host>/api/v1/health
+npm run db:check --workspace @flowboard/api
+```
+
+Prisma migrations run before the API starts through the service start command.
+Run them only against the intended production Supabase database.
+
+### Frontend deployment
+
+Create a Vercel project for this repository and set:
+
+```text
+VITE_API_URL=https://<api-host>/api/v1
+```
+
+The Vercel manifest handles the workspace build and SPA fallback. Add the final
+Vercel origin to the API's comma-separated `CLIENT_ORIGIN` value, redeploy the
+API, and then test registration, login/logout, project and task mutations,
+notifications, and browser cookie behavior over HTTPS.
+
+### Real-time status
+
+The current application exposes REST endpoints only; it does not yet include a
+Socket.io server or client. Real-time connectivity cannot be smoke-tested or
+deployed until Socket.io is implemented as a separate feature.
+
 ## Environment configuration
 
 ### API: `apps/api/.env`

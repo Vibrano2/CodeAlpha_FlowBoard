@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: flowboard-api
+    runtime: node
+    plan: starter
+    rootDir: .
+    buildCommand: npm ci && npm run build --workspace @flowboard/api
+    startCommand: npm run db:migrate --workspace @flowboard/api && npm run start --workspace @flowboard/api
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AUTH_COOKIE_NAME
+        value: flowboard_session
+      - key: AUTH_TOKEN_TTL
+        value: 7d
