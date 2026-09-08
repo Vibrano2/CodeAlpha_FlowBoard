@@ -2,10 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ToastProvider, useToast } from "./components/toast";
 
-const TriggerButton = ({ message, tone }: { message: string; tone?: "success" | "error" }) => {
+const TriggerButton = ({ title, message, tone }: { title: string; message?: string; tone?: "success" | "error" | "info" }) => {
   const { showToast } = useToast();
   return (
-    <button type="button" onClick={() => showToast(message, tone)}>
+    <button type="button" onClick={() => showToast({ title, message, tone })}>
       Trigger toast
     </button>
   );
@@ -15,7 +15,7 @@ describe("Toast notifications", () => {
   it("shows a success toast and allows dismissing it", async () => {
     render(
       <ToastProvider>
-        <TriggerButton message="Project created." />
+        <TriggerButton title="Project created." />
       </ToastProvider>,
     );
 
@@ -23,7 +23,7 @@ describe("Toast notifications", () => {
 
     expect(await screen.findByText("Project created.")).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Dismiss notification" }));
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss Project created. notification" }));
 
     await waitFor(() => {
       expect(screen.queryByText("Project created.")).not.toBeInTheDocument();
@@ -33,14 +33,14 @@ describe("Toast notifications", () => {
   it("visually distinguishes error toasts", async () => {
     render(
       <ToastProvider>
-        <TriggerButton message="Something went wrong." tone="error" />
+        <TriggerButton title="Something went wrong." tone="error" />
       </ToastProvider>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Trigger toast" }));
 
     const message = await screen.findByText("Something went wrong.");
-    expect(message.closest("div")).toHaveClass("border-red-200");
+    expect(message.closest('[role="alert"]')).toHaveClass("border-red-200");
   });
 
   it("throws when useToast is used outside of a provider", () => {
@@ -50,7 +50,7 @@ describe("Toast notifications", () => {
     };
 
     expect(() => render(<ThrowingComponent />)).toThrow(
-      "useToast must be used within a ToastProvider.",
+      "useToast must be used inside ToastProvider.",
     );
   });
 });
