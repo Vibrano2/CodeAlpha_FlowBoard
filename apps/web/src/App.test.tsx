@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { ToastProvider } from "./components/toast";
 import { createAppQueryClient } from "./lib/query-client";
 
 const user = {
@@ -31,7 +32,7 @@ const renderApp = (initialPath: string) => {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialPath]}><App /></MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}><ToastProvider><App /></ToastProvider></MemoryRouter>
     </QueryClientProvider>,
   );
 };
