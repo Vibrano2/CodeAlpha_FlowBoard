@@ -1,5 +1,6 @@
 import { ActivityAction, NotificationType, Prisma, ProjectRole } from "@prisma/client";
 import { prisma } from "../database/prisma.js";
+import { publishRealtimeEvent } from "../realtime/realtime-events.js";
 import { AppError } from "../utils/app-error.js";
 import { requireProjectMember, requireProjectOwner } from "./project-access.service.js";
 
@@ -74,6 +75,8 @@ export const addProjectMember = async (
       }),
     ]);
 
+    publishRealtimeEvent({ type: "project:members-changed", projectId });
+    publishRealtimeEvent({ type: "notification:changed", userIds: [userId] });
     return membership;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -122,6 +125,8 @@ export const removeProjectMember = async (
         },
       }),
     ]);
+    publishRealtimeEvent({ type: "project:access-revoked", projectId, userId });
+    publishRealtimeEvent({ type: "project:members-changed", projectId });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       throw new AppError(404, "MEMBER_NOT_FOUND", "Project member was not found.");

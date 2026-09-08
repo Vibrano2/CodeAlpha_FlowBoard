@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../database/prisma.js";
+import { publishRealtimeEvent } from "../realtime/realtime-events.js";
 import { AppError } from "../utils/app-error.js";
 
 const notificationSelect = {
@@ -39,11 +40,13 @@ export const markNotificationRead = async (notificationId: string, userId: strin
   }
 
   try {
-    return await prisma.notification.update({
+    const updatedNotification = await prisma.notification.update({
       where: { id: notificationId },
       data: { isRead: true },
       select: notificationSelect,
     });
+    publishRealtimeEvent({ type: "notification:changed", userIds: [userId] });
+    return updatedNotification;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       throw new AppError(404, "NOTIFICATION_NOT_FOUND", "Notification was not found.");
@@ -58,6 +61,10 @@ export const markAllNotificationsRead = async (userId: string) => {
     where: { userId, isRead: false },
     data: { isRead: true },
   });
+
+  if (result.count > 0) {
+    publishRealtimeEvent({ type: "notification:changed", userIds: [userId] });
+  }
 
   return result.count;
 };

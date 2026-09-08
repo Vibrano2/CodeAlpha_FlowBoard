@@ -3,22 +3,29 @@ import { type FormEvent, useState } from "react";
 import { useCreateComment, useDeleteComment, useTaskComments, useUpdateComment } from "../hooks/use-collaboration";
 import { userInitials } from "../lib/task-display";
 import type { Comment } from "../types/collaboration";
+import { ConfirmDialog } from "./confirm-dialog";
+import { useToast } from "./toast";
 
 export const TaskDiscussion = ({ taskId, projectId, currentUserId }: { taskId: string; projectId: string; currentUserId: string }) => {
   const commentsQuery = useTaskComments(taskId);
   const createComment = useCreateComment();
   const updateComment = useUpdateComment();
   const deleteComment = useDeleteComment();
+  const { showToast } = useToast();
   const [content, setContent] = useState("");
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null);
 
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalizedContent = content.trim();
     if (!normalizedContent) return;
     createComment.mutate({ taskId, projectId, content: normalizedContent }, {
-      onSuccess: () => setContent(""),
+      onSuccess: () => {
+        setContent("");
+        showToast({ title: "Comment posted" });
+      },
     });
   };
 
@@ -35,15 +42,28 @@ export const TaskDiscussion = ({ taskId, projectId, currentUserId }: { taskId: s
       taskId,
       projectId,
       content: editingContent.trim(),
-    }, { onSuccess: () => setEditingComment(null) });
+    }, {
+      onSuccess: () => {
+        setEditingComment(null);
+        showToast({ title: "Comment updated" });
+      },
+    });
   };
 
   const handleDelete = (comment: Comment) => {
-    if (!window.confirm("Delete this comment?")) return;
-    deleteComment.mutate({ commentId: comment.id, taskId, projectId });
+    deleteComment.mutate(
+      { commentId: comment.id, taskId, projectId },
+      {
+        onSuccess: () => {
+          setCommentToDelete(null);
+          showToast({ title: "Comment deleted" });
+        },
+      },
+    );
   };
 
   return (
+    <>
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" aria-labelledby="discussion-heading">
       <div className="flex items-center gap-2"><MessageSquare className="text-slate-400" aria-hidden="true" size={19} /><h2 className="font-bold text-slate-950" id="discussion-heading">Discussion</h2></div>
 
@@ -69,7 +89,7 @@ export const TaskDiscussion = ({ taskId, projectId, currentUserId }: { taskId: s
                     {comment.userId === currentUserId ? (
                       <div className="flex gap-1">
                         <button className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-brand-600" type="button" aria-label={`Edit comment by ${comment.user.name}`} onClick={() => beginEditing(comment)}><Pencil aria-hidden="true" size={14} /></button>
-                        <button className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-red-600" type="button" aria-label={`Delete comment by ${comment.user.name}`} onClick={() => handleDelete(comment)} disabled={deleteComment.isPending}><Trash2 aria-hidden="true" size={14} /></button>
+                        <button className="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-red-600" type="button" aria-label={`Delete comment by ${comment.user.name}`} onClick={() => { deleteComment.reset(); setCommentToDelete(comment); }} disabled={deleteComment.isPending}><Trash2 aria-hidden="true" size={14} /></button>
                       </div>
                     ) : null}
                   </div>
@@ -89,5 +109,17 @@ export const TaskDiscussion = ({ taskId, projectId, currentUserId }: { taskId: s
         {deleteComment.isError ? <p className="mt-3 text-sm text-red-700" role="alert">{deleteComment.error.message}</p> : null}
       </div>
     </section>
+    <ConfirmDialog
+      open={Boolean(commentToDelete)}
+      title="Delete comment?"
+      description="This comment will be permanently removed. This action cannot be undone."
+      confirmLabel="Delete comment"
+      pendingLabel="Deleting comment..."
+      isPending={deleteComment.isPending}
+      errorMessage={deleteComment.isError ? deleteComment.error.message : undefined}
+      onCancel={() => setCommentToDelete(null)}
+      onConfirm={() => { if (commentToDelete) handleDelete(commentToDelete); }}
+    />
+    </>
   );
 };

@@ -2,6 +2,12 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useCurrentUser } from "../hooks/use-auth";
 import { PageLoader } from "./page-loader";
 import { SessionError } from "./session-error";
+import { useRealtimeSession } from "../hooks/use-realtime";
+
+const AuthenticatedOutlet = ({ userId }: { userId: string }) => {
+  useRealtimeSession(userId);
+  return <Outlet />;
+};
 
 export const ProtectedRoute = () => {
   const location = useLocation();
@@ -11,7 +17,7 @@ export const ProtectedRoute = () => {
   if (session.isError) return <SessionError onRetry={() => void session.refetch()} />;
 
   return session.data ? (
-    <Outlet />
+    <AuthenticatedOutlet userId={session.data.id} />
   ) : (
     <Navigate replace to="/login" state={{ from: location.pathname }} />
   );

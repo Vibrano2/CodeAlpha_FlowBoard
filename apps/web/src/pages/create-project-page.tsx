@@ -29,7 +29,7 @@ export const CreateProjectPage = () => {
               onCancel={() => navigate("/projects")}
               onSubmit={(input) => createProject.mutate(input, {
                 onSuccess: (project) => {
-                  showToast(`“${project.name}” was created.`);
+                  showToast({ title: "Project created" });
                   navigate(`/projects/${project.id}`, { replace: true });
                 },
               })}

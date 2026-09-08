@@ -34,7 +34,7 @@ export const RegisterPage = () => {
       title="Create your account"
       description="Set up your personal workspace. You can invite teammates after creating a project."
     >
-      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         {errorMessage ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" id="registration-error" role="alert">{errorMessage}</div>
         ) : null}

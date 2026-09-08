@@ -1,10 +1,10 @@
 # FlowBoard
 
-FlowBoard is a collaborative project management workspace for small teams. It is being built for **CodeAlpha Full Stack Development Task 3** and will let teams organize projects, assign work, track task progress, and communicate around individual tasks.
+FlowBoard is a collaborative project management workspace for small teams, built for **CodeAlpha Full Stack Development Task 3**. Teams can organize projects, assign work, track task progress, and communicate around individual tasks.
 
 ## Project status
 
-Milestones 1 through 8 establish the technical foundation, secure authentication, project and member management, the task lifecycle, comments, activity history, task discovery, in-app notifications, and a polished, responsive, accessible user interface. Final security QA and real-time updates remain reserved for their specified milestones.
+Milestones 1 through 10 are complete. FlowBoard now includes the full REST application, polished responsive interface, final security safeguards, and authenticated real-time collaboration.
 
 | Milestone | Status |
 | --- | --- |
@@ -16,8 +16,8 @@ Milestones 1 through 8 establish the technical foundation, secure authentication
 | 6. Comments and activity | Complete |
 | 7. Search and notifications | Complete |
 | 8. UI and responsive polish | Complete |
-| 9. Security and QA | Not started |
-| 10. WebSockets bonus | Not started |
+| 9. Security and QA | Complete |
+| 10. WebSockets bonus | Complete |
 
 ## Milestone 1 features
 
@@ -124,12 +124,44 @@ Milestones 1 through 8 establish the technical foundation, secure authentication
 
 ## Milestone 8 features
 
-- Tailwind CSS design tokens for the FlowBoard brand color, typography, and spacing scale
-- Responsive layouts validated at 375px, 768px, 1024px, and 1440px, including a collapsible mobile navigation bar and a fixed desktop sidebar
-- Consistent loading, error, and empty states across every page and data-driven section
-- Accessible forms with associated labels, `aria-live` error messaging, visible focus outlines, and keyboard-operable controls throughout
-- Toast notifications confirming successful project, task, and membership actions, alongside existing inline error feedback
-- Honest destructive-action confirmations for project, task, comment, and member removal
+- Responsive application layouts for mobile, tablet, laptop, and wide desktop widths
+- Accessible keyboard-managed confirmation dialogs for project, member, task, and comment deletion
+- Reusable live-region toast feedback for successful project, task, member, comment, and profile actions
+- Authenticated profile screen for display name, normalized email, and optional HTTPS avatar updates
+- Self-scoped profile API that never accepts a target user identifier
+- Clickable desktop and mobile profile navigation with avatar or initials fallback
+- Skip-to-content navigation, visible focus states, reduced-motion support, and keyboard-scrollable Kanban content
+- Native browser field validation backed by the existing server-side Zod validation
+- Updated loading, empty, error, pending, and success states across core workflows
+
+## Milestone 9 features
+
+- Strict Zod request schemas that reject unknown body, route, and query fields
+- Safe `400` responses for malformed JSON and `413` responses for oversized payloads
+- JSON-only request-body enforcement with clean `415` errors
+- Origin and Fetch Metadata checks for unsafe cross-site browser requests
+- `Cache-Control: no-store` on API responses that may contain sensitive workspace data
+- Validated HTTP/HTTPS client-origin configuration
+- Configurable trusted-proxy hops for correct production client IP handling
+- Authentication throttling that does not penalize successful sign-ins
+- Bounded server request, header, and keep-alive timeouts
+- Defensive frontend handling for malformed or non-JSON API responses
+- Automated regression coverage for headers, malformed input, oversized input, cross-site requests, and mass-assignment attempts
+- Dependency audit with zero known production vulnerabilities
+
+## Milestone 10 features
+
+- Socket.io server attached to the existing Express HTTP server
+- WebSocket authentication through the existing signed HTTP-only session cookie
+- Server-authorized project-room joins backed by current database membership
+- Immediate room eviction and client redirection when project membership is removed
+- Live task creation, editing, status movement, assignment, and deletion refreshes
+- Live comment creation, editing, and deletion refreshes
+- Live notification and unread-count refreshes across authenticated browser sessions
+- Automatic project-room rejoin after Socket.io reconnection
+- Minimal identifier-only events that trigger REST cache invalidation instead of replacing REST as the source of truth
+- Socket origin allowlisting and a bounded 10 KB inbound event payload
+- Integration tests for unauthenticated connections, untrusted origins, outsider room access, authorized broadcasts, and member eviction
 
 ## Tech stack
 
@@ -141,6 +173,7 @@ Milestones 1 through 8 establish the technical foundation, secure authentication
 - Tailwind CSS 4
 - React Router 7
 - TanStack Query 5
+- Socket.io Client 4
 
 ### Backend
 
@@ -152,6 +185,7 @@ Milestones 1 through 8 establish the technical foundation, secure authentication
 - Zod
 - bcrypt
 - JSON Web Tokens in HTTP-only cookies
+- Socket.io 4
 
 ### Quality
 
@@ -226,12 +260,14 @@ Environment files are ignored by Git. Never commit real credentials or secrets.
 | `JWT_SECRET` | Yes | `replace-with-at-least-32-random-characters` | Secret used to sign authentication tokens |
 | `AUTH_COOKIE_NAME` | No | `flowboard_session` | HTTP-only session cookie name |
 | `AUTH_TOKEN_TTL` | No | `7d` | Authentication token lifetime |
+| `TRUST_PROXY_HOPS` | No | `0` | Trusted reverse-proxy hop count; set only for the deployment topology |
 
 ### Web: `apps/web/.env`
 
 | Variable | Required | Example | Purpose |
 | --- | --- | --- | --- |
 | `VITE_API_URL` | Yes | `http://localhost:4000/api/v1` | Versioned REST API base URL |
+| `VITE_SOCKET_URL` | No | `http://localhost:4000` | Socket.io server origin; defaults to the API origin |
 
 Only variables beginning with `VITE_` are exposed to browser code. Never put secrets in the web environment file.
 
@@ -282,6 +318,7 @@ Local services:
 - Web application: `http://localhost:5173`
 - REST API: `http://localhost:4000/api/v1`
 - Health endpoint: `http://localhost:4000/api/v1/health`
+- Socket.io endpoint: served by the API origin
 
 Example health response:
 
@@ -356,6 +393,8 @@ Controllers remain thin, services contain business logic, and database access is
 
 | Method | Endpoint | Authorization | Purpose |
 | --- | --- | --- | --- |
+| `GET` | `/api/v1/users/me` | Authenticated user | Return the current user's safe profile |
+| `PATCH` | `/api/v1/users/me` | Authenticated user | Update the current user's name, email, or HTTPS avatar URL |
 | `GET` | `/api/v1/users/search?email=` | Authenticated user | Search registered users by email |
 | `GET` | `/api/v1/projects/:projectId/members` | Project member | List project members |
 | `POST` | `/api/v1/projects/:projectId/members` | Project owner | Add a registered user as a member |
@@ -394,6 +433,18 @@ Controllers remain thin, services contain business logic, and database access is
 | `PATCH` | `/api/v1/notifications/:notificationId/read` | Notification owner | Mark one owned notification as read |
 | `PATCH` | `/api/v1/notifications/read-all` | Authenticated user | Mark all current-user notifications as read |
 
+### Real-time events
+
+The browser authenticates Socket.io using the same HTTP-only session cookie as REST. Clients request a project join with a project UUID, and the server derives the room name only after confirming current project membership.
+
+Server events use minimal identifiers and tell TanStack Query to refetch authoritative REST data:
+
+- `task:created`, `task:updated`, `task:deleted`
+- `comment:created`, `comment:updated`, `comment:deleted`
+- `notification:changed`
+- `project:members-changed`
+- `project:access-revoked`
+
 ## Security foundation
 
 - secrets and local environment files are Git-ignored
@@ -406,7 +457,7 @@ Controllers remain thin, services contain business logic, and database access is
 - Prisma uses parameterized database operations
 - passwords are hashed with bcrypt and never returned
 - signed authentication tokens are stored only in HTTP-only cookies
-- authentication cookies use SameSite protection and Secure in production
+- authentication cookies use SameSite protection locally and Secure, cross-site-compatible settings in production
 - registration and login are rate limited
 - unsafe browser requests reject untrusted origins
 - invalid and expired authentication returns `401` and clears the cookie
@@ -425,10 +476,47 @@ Controllers remain thin, services contain business logic, and database access is
 - notification queries and mutations are always scoped to the authenticated user
 - notification records are generated only by backend business actions
 - notification event transactions avoid unnecessary notifications to the actor
+- strict request schemas reject unexpected fields instead of silently accepting them
+- malformed, oversized, and non-JSON bodies return safe client errors
+- unsafe cross-site requests are rejected through Origin and Fetch Metadata checks
+- API responses use `Cache-Control: no-store`
+- production deployments can explicitly configure trusted reverse-proxy hops
+- server timeouts bound slow or incomplete HTTP requests
+- Socket.io authenticates the signed session before accepting a connection
+- project rooms can only be joined after a fresh database membership check
+- removed members are evicted from project rooms immediately
+- browser socket origins are restricted to configured client origins
+- inbound Socket.io event payloads are limited to 10 KB
 
 ## Deployment
 
-Deployment URLs will be added after the core application passes the security and QA milestone. No production deployment or demo credentials exist yet.
+FlowBoard uses a three-part production deployment:
+
+- **Frontend:** Vercel, built from the `@flowboard/web` workspace using `vercel.json`
+- **API and Socket.io:** Railway, built from the `@flowboard/api` workspace
+- **PostgreSQL:** Supabase
+
+`render.yaml` is retained as an alternative Render deployment template. The active Railway service requires `DATABASE_URL`, `JWT_SECRET`, and `CLIENT_ORIGIN`, plus the remaining API settings documented in `apps/api/.env.example`. Set `CLIENT_ORIGIN` to the final HTTPS Vercel origin without a trailing slash.
+
+The Vercel project requires these public build-time variables:
+
+| Variable | Value |
+| --- | --- |
+| `VITE_API_URL` | `https://codealphaflowboard-production.up.railway.app/api/v1` |
+| `VITE_SOCKET_URL` | `https://codealphaflowboard-production.up.railway.app` |
+
+Run database migrations before deploying an API version that changes the Prisma schema:
+
+```bash
+npm run db:migrate
+```
+
+Verified production services:
+
+- **Application:** <https://flowboard-beta-five.vercel.app>
+- **API health:** <https://codealphaflowboard-production.up.railway.app/api/v1/health>
+
+No public demo credentials are committed.
 
 ## CodeAlpha submission
 

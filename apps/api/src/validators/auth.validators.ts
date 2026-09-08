@@ -23,12 +23,12 @@ export const registerSchema = z.object({
     .max(100, "Name must contain at most 100 characters."),
   email: emailSchema,
   password: passwordSchema,
-});
+}).strict();
 
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "Password is required.").max(72),
-});
+}).strict();
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

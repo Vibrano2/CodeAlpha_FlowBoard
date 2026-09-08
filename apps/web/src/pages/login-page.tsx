@@ -32,7 +32,7 @@ export const LoginPage = () => {
       title="Sign in to your workspace"
       description="Enter your details to continue to your projects and tasks."
     >
-      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+      <form className="space-y-5" onSubmit={handleSubmit}>
         {login.isError ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
             {login.error.message}

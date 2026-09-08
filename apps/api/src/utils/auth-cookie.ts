@@ -9,7 +9,9 @@ const tokenMaxAge = {
 
 const baseCookieOptions: CookieOptions = {
   httpOnly: true,
-  sameSite: "lax",
+  // The production web app and API are hosted on different sites. SameSite=None
+  // is therefore required for credentialed API requests and Socket.io handshakes.
+  sameSite: env.nodeEnv === "production" ? "none" : "lax",
   secure: env.nodeEnv === "production",
   path: "/",
 };

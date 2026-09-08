@@ -52,6 +52,10 @@ vi.mock("../database/prisma.js", () => ({
 }));
 
 import { createApp } from "../app.js";
+import {
+  type RealtimeDomainEvent,
+  subscribeToRealtimeEvents,
+} from "../realtime/realtime-events.js";
 
 const user = {
   id: userId,
@@ -167,11 +171,14 @@ describe("comment and activity API", () => {
   });
 
   it("creates a trimmed comment and COMMENT_ADDED activity atomically", async () => {
+    const realtimeEvents: RealtimeDomainEvent[] = [];
+    const unsubscribe = subscribeToRealtimeEvents((event) => realtimeEvents.push(event));
     const response = await request(createApp())
       .post(`/api/v1/tasks/${taskId}/comments`)
       .set("Cookie", authCookie())
       .set("Origin", "http://localhost:5173")
       .send({ content: "  The board is ready for review.  " });
+    unsubscribe();
 
     expect(response.status).toBe(201);
     expect(databaseMocks.commentCreate).toHaveBeenCalledWith(
@@ -199,6 +206,10 @@ describe("comment and activity API", () => {
       }],
     });
     expect(databaseMocks.transaction).toHaveBeenCalledTimes(1);
+    expect(realtimeEvents).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "comment:created", projectId, taskId }),
+      { type: "notification:changed", userIds: [otherUserId] },
+    ]));
   });
 
   it("rejects empty and whitespace-only comments", async () => {

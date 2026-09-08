@@ -14,18 +14,19 @@ const projectDescriptionSchema = z
 
 export const projectIdParamsSchema = z.object({
   projectId: z.uuid("Project ID must be a valid UUID."),
-});
+}).strict();
 
 export const createProjectSchema = z.object({
   name: projectNameSchema,
   description: projectDescriptionSchema.optional(),
-});
+}).strict();
 
 export const updateProjectSchema = z
   .object({
     name: projectNameSchema.optional(),
     description: projectDescriptionSchema.optional(),
   })
+  .strict()
   .refine((input) => input.name !== undefined || input.description !== undefined, {
     message: "Provide at least one project field to update.",
   });

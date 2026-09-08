@@ -27,6 +27,17 @@ export class ApiError extends Error {
   }
 }
 
+const isApiErrorBody = (body: unknown): body is ApiErrorBody => {
+  if (typeof body !== "object" || body === null || !("error" in body)) return false;
+  const error = body.error;
+  return typeof error === "object"
+    && error !== null
+    && "code" in error
+    && typeof error.code === "string"
+    && "message" in error
+    && typeof error.message === "string";
+};
+
 export const apiRequest = async <T>(path: string, options?: RequestInit): Promise<T> => {
   const response = await fetch(`${apiUrl}${path}`, {
     ...options,
@@ -38,10 +49,32 @@ export const apiRequest = async <T>(path: string, options?: RequestInit): Promis
     },
   });
 
-  const body = (await response.json()) as T | ApiErrorBody;
+  const responseText = await response.text();
+  let body: unknown;
+
+  try {
+    body = responseText ? JSON.parse(responseText) : null;
+  } catch {
+    body = null;
+  }
 
   if (!response.ok) {
-    throw new ApiError(response.status, body as ApiErrorBody);
+    throw new ApiError(
+      response.status,
+      isApiErrorBody(body)
+        ? body
+        : {
+            success: false,
+            error: {
+              code: "INVALID_API_RESPONSE",
+              message: "FlowBoard could not complete this request.",
+            },
+          },
+    );
+  }
+
+  if (body === null) {
+    throw new Error("FlowBoard received an invalid API response.");
   }
 
   return body as T;

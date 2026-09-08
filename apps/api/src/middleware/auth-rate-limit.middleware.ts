@@ -5,6 +5,7 @@ export const authRateLimit = rateLimit({
   limit: 10,
   standardHeaders: "draft-8",
   legacyHeaders: false,
+  skipSuccessfulRequests: true,
   message: {
     success: false,
     error: {

@@ -9,6 +9,24 @@ export const errorHandler: ErrorRequestHandler = (
   response,
   _next,
 ) => {
+  if (typeof error === "object" && error !== null && "type" in error) {
+    if (error.type === "entity.parse.failed") {
+      response.status(400).json({
+        success: false,
+        error: { code: "INVALID_JSON", message: "Request body contains invalid JSON." },
+      });
+      return;
+    }
+
+    if (error.type === "entity.too.large") {
+      response.status(413).json({
+        success: false,
+        error: { code: "PAYLOAD_TOO_LARGE", message: "Request body is too large." },
+      });
+      return;
+    }
+  }
+
   if (error instanceof AppError) {
     response.status(error.statusCode).json({
       success: false,
